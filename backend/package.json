@@ -1,0 +1,15 @@
+{
+  "name": "transaction-reporting-service",
+  "version": "1.0.0",
+  "description": "Reporting service for transaction analytics",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}
