@@ -36,6 +36,10 @@ Detailed local deployment instructions are documented in [k8s/README.md](k8s/REA
 
 Common inspection and cleanup commands are documented in [k8s/README.md](k8s/README.md).
 
+## Transaction Generator
+
+Use [scripts/README.md](scripts/README.md) for the local transaction generator that can emit sample payloads or send them to the ingestion API.
+
 ## Kubernetes Manifests
 
 The Kubernetes files are organized as follows:

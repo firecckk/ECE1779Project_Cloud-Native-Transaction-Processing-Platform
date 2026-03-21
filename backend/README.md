@@ -56,7 +56,44 @@ Expected response sample:
 }
 ```
 
-### 2) Daily Volume
+### 2) Ingest Transaction
+- URL: `POST /transactions`
+- Purpose: Validate ingestion payload, persist transaction with `status = RECEIVED`, and append an audit row.
+
+Example:
+```bash
+curl -s -X POST http://localhost:8080/transactions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "idempotency_key": "ingest-demo-001",
+    "event_timestamp": "2026-03-01T15:00:00Z",
+    "sender_account": "acct_1001",
+    "receiver_account": "acct_2002",
+    "merchant_id": "merchant_01",
+    "amount": 259.99,
+    "currency": "CAD",
+    "transaction_type": "PAYMENT",
+    "channel": "WEB",
+    "metadata": {
+      "device_id": "device_123",
+      "location": "Toronto"
+    }
+  }'
+```
+
+Expected response sample:
+```json
+{
+  "message": "Transaction accepted",
+  "transaction": {
+    "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
+    "status": "RECEIVED"
+  }
+}
+```
+
+### 3) Daily Volume
 - URL: `GET /reports/daily-volume?from=<ISO_DATE>&to=<ISO_DATE>`
 - Purpose: Daily transaction count, amount, avg amount, and status breakdown.
 
@@ -83,7 +120,7 @@ Expected response sample:
 }
 ```
 
-### 3) Merchant Ranking
+### 4) Merchant Ranking
 - URL: `GET /reports/merchant-ranking?limit=<N>&from=<ISO_DATE>&to=<ISO_DATE>`
 - Purpose: Rank merchants by transaction amount/volume with risk summary.
 
@@ -119,7 +156,7 @@ Expected response sample:
 }
 ```
 
-### 4) Risk Distribution
+### 5) Risk Distribution
 - URL: `GET /reports/risk-distribution?bucket_size=<1-100>&from=<ISO_DATE>&to=<ISO_DATE>`
 - Purpose: Build histogram-style bucket counts for risk scores.
 
