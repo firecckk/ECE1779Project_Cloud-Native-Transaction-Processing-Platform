@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - postgres-pvc.yaml
+  - postgres-deployment.yaml
+  - postgres-service.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - network-policy.yaml
+
+configMapGenerator:
+  - name: transaction-platform-config
+    literals:
+      - LOG_LEVEL=INFO
+      - PORT=8080
+      - POSTGRES_DB=transaction_platform
+      - POSTGRES_HOST=transaction-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=transaction_user
+  - name: transaction-db-schema
+    files:
+      - schema.sql=schema.sql
+
+secretGenerator:
+  - name: transaction-platform-secrets
+    literals:
+      - POSTGRES_PASSWORD=transaction_password
+      - DATABASE_URL=postgresql://transaction_user:transaction_password@transaction-postgres:5432/transaction_platform
+
+generatorOptions:
+  disableNameSuffixHash: true
