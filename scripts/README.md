@@ -35,6 +35,9 @@ System-managed database fields such as `status`, `risk_score`, `created_at`, and
 - `doks-deploy.sh`
 	Builds and pushes the backend image to DigitalOcean Container Registry, applies the DOKS overlay, and prints the public service endpoint.
 
+- `doks-delete.sh`
+	Deletes the configured DOKS cluster. By default it also removes associated load balancers, volumes, and volume snapshots.
+
 - `doks-verify.sh`
 	Runs a curl-based smoke test against the deployed DOKS backend.
 
@@ -44,6 +47,8 @@ System-managed database fields such as `status`, `risk_score`, `created_at`, and
 Examples:
 
 ```bash
+./scripts/doks-delete.sh
+DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh k8s-ece1779-transcation-platform
 ./scripts/doks-scale-nodes.sh 2
 ./scripts/doks-scale-nodes.sh 3 pool-2h5y79uc1
 ```

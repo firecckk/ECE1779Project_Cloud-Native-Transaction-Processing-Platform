@@ -220,4 +220,16 @@ Delete the deployment:
 kubectl delete -k k8s/overlays/doks
 ```
 
+Delete the cluster itself:
+
+```bash
+./scripts/doks-delete.sh
+```
+
+To keep associated load balancers and volumes, disable dangerous cleanup explicitly:
+
+```bash
+DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh
+```
+
 The pushed image in DOKR is not deleted automatically.
