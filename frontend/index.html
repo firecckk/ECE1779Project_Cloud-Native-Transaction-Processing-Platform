@@ -9,7 +9,14 @@
   <body>
     <main class="container">
       <section class="card">
-        <h1>Report Query Console</h1>
+        <div class="topbar">
+          <h1>Transaction Console</h1>
+          <button id="togglePageBtn" class="tab-btn">Database</button>
+        </div>
+      </section>
+
+      <section id="reportsPage" class="page active">
+      <section class="card">
         <p class="subtitle">Select a date range and fetch reporting data from backend.</p>
 
         <div class="controls">
@@ -41,6 +48,9 @@
 
       <section class="card">
         <h2>Daily Volume</h2>
+        <div class="chart-wrap">
+          <canvas id="dailyVolumeChart"></canvas>
+        </div>
         <div id="dailyVolume"></div>
       </section>
 
@@ -51,10 +61,41 @@
 
       <section class="card">
         <h2>Risk Distribution</h2>
+        <div class="chart-wrap">
+          <canvas id="riskDistributionChart"></canvas>
+        </div>
         <div id="riskDistribution"></div>
+      </section>
+      </section>
+
+      <section id="databasePage" class="page">
+      <section class="card">
+        <h2>Database Tables</h2>
+        <p class="subtitle">Inspect latest rows from core tables in PostgreSQL.</p>
+        <div class="controls">
+          <label>
+            Rows per table
+            <input id="dbLimit" type="number" min="1" max="200" value="20" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="refreshDbBtn">Refresh Database View</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>transactions</h2>
+        <div id="transactionsTable"></div>
+      </section>
+
+      <section class="card">
+        <h2>transaction_status_audit</h2>
+        <div id="auditTable"></div>
+      </section>
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

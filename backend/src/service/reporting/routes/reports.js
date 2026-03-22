@@ -191,4 +191,60 @@ router.get("/risk-distribution", async (req, res, next) => {
   }
 });
 
+// Lightweight read endpoints for frontend DB explorer page.
+router.get("/transactions-table", async (req, res, next) => {
+  try {
+    const limit = Math.min(parsePositiveInt(req.query.limit, 20), 200);
+
+    const sql = `
+      SELECT
+        transaction_id,
+        event_timestamp,
+        sender_account,
+        receiver_account,
+        merchant_id,
+        amount,
+        currency,
+        transaction_type,
+        status,
+        risk_score,
+        reject_reason,
+        created_at,
+        validated_at
+      FROM transactions
+      ORDER BY created_at DESC
+      LIMIT $1;
+    `;
+
+    const result = await db.query(sql, [limit]);
+    return res.json({ limit, rows: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get("/status-audit-table", async (req, res, next) => {
+  try {
+    const limit = Math.min(parsePositiveInt(req.query.limit, 20), 200);
+
+    const sql = `
+      SELECT
+        transaction_id,
+        old_status,
+        new_status,
+        reason,
+        changed_at,
+        changed_by
+      FROM transaction_status_audit
+      ORDER BY changed_at DESC
+      LIMIT $1;
+    `;
+
+    const result = await db.query(sql, [limit]);
+    return res.json({ limit, rows: result.rows });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 module.exports = router;
