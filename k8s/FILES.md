@@ -51,6 +51,34 @@ The `overlays/minikube/` directory contains environment-specific changes for loc
 - `overlays/minikube/backend-service-patch.yaml`
   Patches the backend service from `ClusterIP` to `NodePort` so it can be reached from outside the cluster during local development.
 
+## overlays/doks/
+
+The `overlays/doks/` directory contains DigitalOcean Kubernetes specific configuration.
+
+- `overlays/doks/kustomization.yaml`
+  Entry point for the DOKS overlay. It replaces local config and secret generation with env-file based values, points the backend image to DigitalOcean Container Registry, and applies cloud-specific patches.
+
+- `overlays/doks/backend-service-patch.yaml`
+  Changes the backend service to `LoadBalancer` so DigitalOcean can provision a public load balancer.
+
+- `overlays/doks/postgres-pvc-patch.yaml`
+  Changes the PostgreSQL persistent volume to use the `do-block-storage` storage class and a larger disk size for cloud usage.
+
+- `overlays/doks/backend-deployment-patch.yaml`
+  Adjusts the backend deployment for cloud usage by increasing replicas, setting `imagePullPolicy: Always`, and tuning resource requests and limits.
+
+- `overlays/doks/hpa.yaml`
+  Adds a HorizontalPodAutoscaler for the backend deployment.
+
+- `overlays/doks/config.env.example`
+  Example non-sensitive configuration file. Copy it to `config.env` before deploying to DOKS.
+
+- `overlays/doks/secrets.env.example`
+  Example secrets file. Copy it to `secrets.env`, replace the placeholder values, and keep the real file out of git.
+
+- `overlays/doks/deploy.env.example`
+  Example deployment variable file for `scripts/doks-deploy.sh`. Copy it to `deploy.env` to avoid manually exporting the cluster name, registry name, image tag, and namespace on every deploy.
+
 ## Related Files Outside k8s/
 
 - `database/schema.sql`
@@ -61,3 +89,6 @@ The `overlays/minikube/` directory contains environment-specific changes for loc
 
 - `docker-compose.yml`
   Separate local container orchestration option. It is not used by the Kubernetes manifests, but it serves a similar purpose for Docker-based local development.
+
+- `scripts/doks-deploy.sh`
+  Helper script that can load deployment variables from `deploy.env`, logs in to DOKS and DOKR, builds and pushes the backend image, and applies the DOKS overlay.

@@ -29,3 +29,21 @@ Generated fields:
 - `metadata`
 
 System-managed database fields such as `status`, `risk_score`, `created_at`, and `validated_at` are intentionally omitted.
+
+## DOKS Scripts
+
+- `doks-deploy.sh`
+	Builds and pushes the backend image to DigitalOcean Container Registry, applies the DOKS overlay, and prints the public service endpoint.
+
+- `doks-verify.sh`
+	Runs a curl-based smoke test against the deployed DOKS backend.
+
+- `doks-scale-nodes.sh`
+	Scales the current DOKS node pool to the requested node count.
+
+Examples:
+
+```bash
+./scripts/doks-scale-nodes.sh 2
+./scripts/doks-scale-nodes.sh 3 pool-2h5y79uc1
+```

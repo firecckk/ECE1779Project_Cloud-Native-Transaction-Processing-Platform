@@ -54,6 +54,34 @@
 - `overlays/minikube/backend-service-patch.yaml`
   覆盖 backend Service 的类型，把 `ClusterIP` 改为 `NodePort`，这样本地开发时可以从集群外直接访问 backend。
 
+## overlays/doks/
+
+`overlays/doks/` 目录存放 DigitalOcean Kubernetes 云环境专用的覆盖配置。
+
+- `overlays/doks/kustomization.yaml`
+  DOKS overlay 的入口文件。它会替换基础层中的 ConfigMap 和 Secret 生成逻辑，指向 DigitalOcean Container Registry 中的 backend 镜像，并应用云环境专用 patch。
+
+- `overlays/doks/backend-service-patch.yaml`
+  把 backend Service 改成 `LoadBalancer`，让 DigitalOcean 为它分配公网访问入口。
+
+- `overlays/doks/postgres-pvc-patch.yaml`
+  把 PostgreSQL 存储改成 `do-block-storage`，并提高磁盘容量，以适应云环境。
+
+- `overlays/doks/backend-deployment-patch.yaml`
+  对 backend Deployment 做云环境调整，包括增加副本数、设置 `imagePullPolicy: Always`，以及修改资源请求与限制。
+
+- `overlays/doks/hpa.yaml`
+  为 backend Deployment 增加水平自动扩缩容配置。
+
+- `overlays/doks/config.env.example`
+  非敏感配置示例文件。部署到 DOKS 前应复制成 `config.env` 并按环境修改。
+
+- `overlays/doks/secrets.env.example`
+  敏感配置示例文件。部署到 DOKS 前应复制成 `secrets.env`，替换占位值，并确保真实文件不要提交到 git。
+
+- `overlays/doks/deploy.env.example`
+  `scripts/doks-deploy.sh` 使用的部署变量示例文件。复制成 `deploy.env` 后，可以避免每次部署前手动 `export` 集群名、镜像仓库名、镜像标签和命名空间。
+
 ## k8s 目录外但与部署相关的文件
 
 - `database/schema.sql`
@@ -64,3 +92,6 @@
 
 - `docker-compose.yml`
   另一套本地容器编排方式。它不属于 Kubernetes 部署流程，但在用途上和本地 K8s 部署类似，适合 Docker Compose 场景。
+
+- `scripts/doks-deploy.sh`
+  云部署辅助脚本。它支持从 `deploy.env` 读取部署变量，并完成 kubeconfig 获取、镜像构建与推送，以及 DOKS overlay 的应用。

@@ -4,10 +4,13 @@ This directory contains Kubernetes manifests for the transaction platform.
 
 For a file-by-file explanation of the manifests in this directory, see [FILES.md](FILES.md).
 
+For DigitalOcean Kubernetes deployment instructions, see [DOKS.md](DOKS.md).
+
 ## Layout
 
 - `base/`: reusable manifests for PostgreSQL, the backend API, shared config, and network policy.
 - `overlays/minikube/`: local development overlay for Minikube.
+- `overlays/doks/`: DigitalOcean Kubernetes overlay with cloud-specific patches.
 
 ## Current Scope
 
@@ -116,4 +119,6 @@ kubectl delete -k k8s/overlays/minikube
 
 ## Next Step for DigitalOcean
 
-The manifest structure is ready for a future `overlays/doks/` overlay. That overlay should replace local image references, externalize secrets, and add ingress/TLS settings for a managed cluster.
+DigitalOcean Kubernetes deployment assets now live in `overlays/doks/`.
+
+Use [DOKS.md](DOKS.md) for the cloud deployment flow.
