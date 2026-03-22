@@ -1,4 +1,4 @@
-const db = require("../../../shared/src/db");
+const db = require("../../../../shared/src/db");
 
 const HIGH_AMOUNT_MEDIUM_THRESHOLD = 1000;
 const HIGH_AMOUNT_CRITICAL_THRESHOLD = 5000;

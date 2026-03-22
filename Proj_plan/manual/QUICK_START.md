@@ -195,21 +195,24 @@ postgres          Up 5 seconds
 curl http://localhost:8080/health
 
 # 预期响应
-{"service":"backend","status":"healthy","timestamp":"2026-03-22..."}
+{"status":"ok"}
 ```
 
 ### 步骤 3️⃣：测试交易摄入
 ```bash
 # 插入一笔交易（PowerShell）
 $body = @{
-    uuid = "00000001-0000-0000-0000-000000000001"
-    idempotency_key = "test-key-001"
-    sender = "Alice"
-    receiver = "Bob"
-    merchant_id = "merchant-001"
+    transaction_id = "11111111-0000-1000-a000-000000000002"
+    idempotency_key = "test-key-002"
+    event_timestamp = Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ"
+    sender_account = "acc-bob"
+    receiver_account = "acc-jerry"
+    merchant_id = "merchant-002"
     amount = 1500.25
     currency = "USD"
-    timestamp = Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ"
+    transaction_type = "PAYMENT"
+    channel = "WEB"
+    metadata = @{ source = "quickstart" }
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "http://localhost:8080/transactions" `
@@ -221,18 +224,25 @@ Invoke-RestMethod -Uri "http://localhost:8080/transactions" `
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{
-    "uuid": "00000001-0000-0000-0000-000000000001",
+        "transaction_id": "00000001-0000-1000-a000-000000000001",
     "idempotency_key": "test-key-001",
-    "sender": "Alice",
-    "receiver": "Bob",
+        "event_timestamp": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'",
+        "sender_account": "acc-alice",
+        "receiver_account": "acc-bob",
     "merchant_id": "merchant-001",
     "amount": 1500.25,
     "currency": "USD",
-    "timestamp": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'""}'
+        "transaction_type": "PAYMENT",
+        "channel": "WEB",
+        "metadata": {"source": "quickstart"}
+    }'
 ```
 
 ### 步骤 4️⃣：运行验证规则
 ```bash
+# 说明：当前后端在交易写入 RECEIVED 后会自动触发验证。
+# 以下命令主要用于手动补跑/批量补偿。
+
 # 触发验证处理
 curl -X POST http://localhost:8080/validation/run-once -H "Content-Type: application/json" -d '{"limit": 20}'
 
@@ -243,13 +253,13 @@ curl -X POST http://localhost:8080/validation/run-once -H "Content-Type: applica
 ### 步骤 5️⃣：查询报告
 ```bash
 # 日交易量
-curl http://localhost:8080/reports/daily-volume?date=2026-03-22
+curl "http://localhost:8080/reports/daily-volume?from=2026-03-01&to=2026-03-22"
 
 # 商户排名（Top 5）
-curl http://localhost:8080/reports/merchant-ranking?limit=5
+curl "http://localhost:8080/reports/merchant-ranking?from=2026-03-01&to=2026-03-22&limit=5"
 
 # 风险分布（按 10 点分段）
-curl http://localhost:8080/reports/risk-distribution?bucket_size=10
+curl "http://localhost:8080/reports/risk-distribution?from=2026-03-01&to=2026-03-22&bucket_size=10"
 ```
 
 ---
@@ -269,7 +279,7 @@ psql -h localhost -U transaction_user -d transaction_platform
 ### 常用查询
 ```sql
 -- 查看所有交易
-SELECT transaction_id, sender, receiver, amount, status, risk_score, created_at 
+SELECT transaction_id, sender_account, receiver_account, amount, status, risk_score, created_at 
 FROM transactions LIMIT 10;
 
 -- 查看审计日志（状态变更历史）
@@ -280,25 +290,27 @@ FROM transaction_status_audit ORDER BY changed_at DESC LIMIT 10;
 SELECT status, COUNT(*) FROM transactions GROUP BY status;
 
 -- 查看高风险交易（风险分数 >= 60）
-SELECT transaction_id, sender, receiver, amount, risk_score, status 
+SELECT transaction_id, sender_account, receiver_account, amount, risk_score, status 
 FROM transactions WHERE risk_score >= 60 ORDER BY risk_score DESC;
 
 -- 插入测试数据（不通过 API）
 INSERT INTO transactions (
-    transaction_id, uuid, idempotency_key, sender, receiver, merchant_id, 
-    amount, currency, status, risk_score, created_at
+    transaction_id, idempotency_key, event_timestamp, sender_account, receiver_account,
+    merchant_id, amount, currency, transaction_type, channel, status, risk_score, metadata
 ) VALUES (
-    'txn-manual-001', 
     '00000002-0000-0000-0000-000000000002', 
     'manual-key-001',
-    'Charlie',
-    'Diana',
+    NOW(),
+    'acc-charlie',
+    'acc-diana',
     'merchant-002',
     2500.00,
     'USD',
+    'PAYMENT',
+    'WEB',
     'RECEIVED',
     0,
-    NOW()
+    '{}'::jsonb
 );
 ```
 

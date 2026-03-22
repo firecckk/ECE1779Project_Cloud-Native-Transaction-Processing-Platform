@@ -1,5 +1,6 @@
 const express = require("express");
-const db = require("../../../../shared/src/db");
+const db = require("../../../../../shared/src/db");
+const { runValidationOnce } = require("../../validation/worker");
 
 const router = express.Router();
 
@@ -171,6 +172,17 @@ async function insertTransaction(transaction) {
   }
 }
 
+function triggerValidationAsync(limit = 1) {
+  // Fire-and-forget: ingestion success should not fail if validation worker errors.
+  setImmediate(async () => {
+    try {
+      await runValidationOnce(limit);
+    } catch (error) {
+      console.error("[ValidationAutoTriggerError]", error);
+    }
+  });
+}
+
 router.post("/", async (req, res, next) => {
   try {
     const validationErrors = validateTransactionPayload(req.body);
@@ -184,6 +196,9 @@ router.post("/", async (req, res, next) => {
 
     const transaction = normalizeTransactionPayload(req.body);
     const inserted = await insertTransaction(transaction);
+
+    // Process newly received transactions as soon as possible.
+    triggerValidationAsync(10);
 
     return res.status(201).json({
       message: "Transaction accepted",

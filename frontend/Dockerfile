@@ -1,24 +1,10 @@
-FROM node:18-alpine
+FROM nginx:1.27-alpine
 
-WORKDIR /app
+COPY index.html /usr/share/nginx/html/index.html
+COPY app.js /usr/share/nginx/html/app.js
+COPY styles.css /usr/share/nginx/html/styles.css
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy package files (when available)
-# COPY package*.json ./
-
-# Install dependencies
-# RUN npm install
-
-# Copy source code
-# COPY . .
-
-# Build application
-# RUN npm run build
-
-# Expose port
 EXPOSE 3000
 
-# Start development server
-# CMD ["npm", "start"]
-
-# Placeholder: Keep container running for development
-CMD ["tail", "-f", "/dev/null"]
+CMD ["nginx", "-g", "daemon off;"]

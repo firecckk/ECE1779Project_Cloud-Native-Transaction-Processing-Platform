@@ -1,5 +1,5 @@
 const express = require("express");
-const db = require("../../../../shared/src/db");
+const db = require("../../../../../shared/src/db");
 
 const router = express.Router();
 
