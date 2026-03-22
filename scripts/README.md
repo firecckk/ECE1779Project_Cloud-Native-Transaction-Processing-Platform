@@ -52,3 +52,20 @@ DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh k8s-ece1779-transcation-p
 ./scripts/doks-scale-nodes.sh 2
 ./scripts/doks-scale-nodes.sh 3 pool-2h5y79uc1
 ```
+
+## Schema Sync Scripts
+
+Use these scripts after updating `database/schema.sql` to keep the Kubernetes copy aligned:
+
+- `sync-schema.sh` (bash)
+- `sync-schema.ps1` (PowerShell)
+
+Examples:
+
+```bash
+./scripts/sync-schema.sh
+```
+
+```powershell
+.\scripts\sync-schema.ps1
+```

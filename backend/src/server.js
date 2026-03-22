@@ -1,5 +1,5 @@
 const app = require("./app");
-const config = require("./config");
+const config = require("../../shared/src/config");
 
 // Process entrypoint: boot Express on configured port.
 app.listen(config.port, () => {

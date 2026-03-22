@@ -86,6 +86,7 @@ The `overlays/doks/` directory contains DigitalOcean Kubernetes specific configu
 
 - `backend/Dockerfile`
   Container image definition for the backend service used by the Kubernetes deployment.
+  Build it from repository root context so shared code under `shared/` is included.
 
 - `docker-compose.yml`
   Separate local container orchestration option. It is not used by the Kubernetes manifests, but it serves a similar purpose for Docker-based local development.

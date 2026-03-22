@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   version INT NOT NULL DEFAULT 0
 );
 
---------------------------------------------------Audit table ---------------------------------------------
+--------------------------------------------------Audit table ---------------------------------------------DELETE------------------------------
 -- The audit table captures all status transitions (such as from 'RECEIVED' to 'VALID' changed_at 'Timestamp') for debugging and analysis.
 
 CREATE TABLE IF NOT EXISTS transaction_status_audit (

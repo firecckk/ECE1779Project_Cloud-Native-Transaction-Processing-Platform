@@ -1,7 +1,8 @@
 const express = require("express");
-const reportsRouter = require("./routes/reports");
-const transactionsRouter = require("./routes/transactions");
-const db = require("./db");
+const reportsRouter = require("./service/reporting/routes/reports");
+const transactionsRouter = require("./service/ingestion/routes/transactions");
+const validationRouter = require("./service/validation/routes/validation");
+const db = require("../../shared/src/db");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/health", async (req, res) => {
 // All reporting APIs are grouped under /reports.
 app.use("/transactions", transactionsRouter);
 app.use("/reports", reportsRouter);
+app.use("/validation", validationRouter);
 
 // Fallback for unknown routes.
 app.use((req, res) => {

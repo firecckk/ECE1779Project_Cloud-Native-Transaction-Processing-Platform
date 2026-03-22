@@ -1,6 +1,18 @@
 # ECE1779Project_Cloud-Native-Transaction-Processing-Platform
 This project aims to design and deploy a cloud-native transaction processing and risk analytics platform that simulates financial transaction workloads. While the system does not use real banking data, it models realistic transaction lifecycles including ingestion, validation, state transitions, risk scoring, and analytical reporting.
 
+## 🚀 Quick Start (New to the Project?)
+
+**Start here:**  👉 [Proj_plan/manual/QUICK_START.md](Proj_plan/manual/QUICK_START.md)
+
+This comprehensive guide includes:
+- 📂 **Project structure** with file-by-file explanations
+- 🔧 **Common modification points** (e.g., where to change validation rules)
+- ⚡ **5-minute local setup** with Docker Compose
+- 📊 **Sample API calls** for testing
+- 🛠️ **Development workflows** (debugging, deploying, schema updates)
+- ❓ **FAQ and troubleshooting**
+
 ## Project Status
 
 The current implementation includes:

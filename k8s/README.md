@@ -57,7 +57,7 @@ minikube start
 
 ```bash
 eval "$(minikube docker-env)"
-docker build -t transaction-reporting-service:local ./backend
+docker build -t transaction-reporting-service:local -f backend/Dockerfile .
 ```
 
 ### 3. Apply the Minikube overlay

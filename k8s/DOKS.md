@@ -155,7 +155,7 @@ doctl registry login
 ### 3. Build and push the backend image
 
 ```bash
-docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG ./backend
+docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG -f backend/Dockerfile .
 docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG
 ```
 

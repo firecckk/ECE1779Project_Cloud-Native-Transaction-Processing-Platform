@@ -44,8 +44,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: transaction_api
     ports:
       - "8080:8080"

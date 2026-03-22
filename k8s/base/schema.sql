@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   version INT NOT NULL DEFAULT 0
 );
 
---------------------------------------------------Audit table ---------------------------------------------
+--------------------------------------------------Audit table ---------------------------------------------DELETE------------------------------
 -- The audit table captures all status transitions (such as from 'RECEIVED' to 'VALID' changed_at 'Timestamp') for debugging and analysis.
 
 CREATE TABLE IF NOT EXISTS transaction_status_audit (
@@ -69,30 +69,30 @@ CREATE TABLE IF NOT EXISTS transaction_status_audit (
 -- Core access patterns:
 -- 1) Validation workers fetch RECEIVED transactions ordered by created_at.
 CREATE INDEX IF NOT EXISTS idx_transactions_status_created_at
-  ON transactions (status, created_at);
+  ON transactions (status, created_at); 
   -- This supports efficient retrieval of transactions in 'RECEIVED' state for validation workers, ordered by creation time.
 
 -- 2) Reporting by merchant and time range.
 CREATE INDEX IF NOT EXISTS idx_transactions_merchant_created_at
-  ON transactions (merchant_id, created_at);
-  -- This supports efficient reporting queries that filter by merchant_id and a time range on created_at,
+  ON transactions (merchant_id, created_at); 
+  -- This supports efficient reporting queries that filter by merchant_id and a time range on created_at, 
   -- which is common for generating transaction reports and analytics.
 
 -- 3) Time-bounded reporting.
 CREATE INDEX IF NOT EXISTS idx_transactions_event_timestamp
-  ON transactions (event_timestamp);
+  ON transactions (event_timestamp); 
   -- This supports efficient queries that filter by a time range on event_timestamp.
 
 -- 4) Query by state transitions / finalized records.
 CREATE INDEX IF NOT EXISTS idx_transactions_status_validated_at
-  ON transactions (status, validated_at);
-  -- This supports efficient retrieval of transactions that have been validated (status = 'VALID')
+  ON transactions (status, validated_at); 
+  -- This supports efficient retrieval of transactions that have been validated (status = 'VALID') 
   -- and allows filtering by the time they were validated, which is useful for performance monitoring
   -- and analysis of validation times.
 
 -- 5) JSON metadata key lookups (optional but useful for analysis).
 CREATE INDEX IF NOT EXISTS idx_transactions_metadata_gin
-  ON transactions USING GIN (metadata);
+  ON transactions USING GIN (metadata); 
   -- This supports efficient querying of JSON metadata fields, which can be useful
   -- for filtering transactions based on contextual information (e.g., IP address, device ID) stored in the metadata.
 

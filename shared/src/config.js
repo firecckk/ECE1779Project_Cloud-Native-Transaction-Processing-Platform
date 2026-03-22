@@ -6,7 +6,7 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-// Centralized runtime configuration for all modules.
+// Shared runtime configuration used by backend services.
 module.exports = {
   port: toNumber(process.env.PORT, DEFAULT_PORT),
   databaseUrl:

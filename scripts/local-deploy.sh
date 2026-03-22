@@ -31,7 +31,7 @@ minikube start -p "$MINIKUBE_PROFILE" --driver="$MINIKUBE_DRIVER"
 
 echo "[local-deploy] building backend image '$BACKEND_IMAGE' inside minikube docker daemon"
 eval "$(minikube -p "$MINIKUBE_PROFILE" docker-env --shell bash)"
-docker build -t "$BACKEND_IMAGE" "$REPO_ROOT/backend"
+docker build -t "$BACKEND_IMAGE" -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
 
 echo "[local-deploy] applying kubernetes overlay '$OVERLAY_PATH'"
 kubectl apply -k "$OVERLAY_PATH"
