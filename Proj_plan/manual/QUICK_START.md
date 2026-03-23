@@ -202,13 +202,13 @@ curl http://localhost:8080/health
 ```bash
 # 插入一笔交易（PowerShell）
 $body = @{
-    transaction_id = "11111111-0000-1000-a000-000000000002"
-    idempotency_key = "test-key-002"
+    transaction_id = "11111111-0000-1000-a000-000000000004"
+    idempotency_key = "test-key-004"
     event_timestamp = Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ"
     sender_account = "acc-bob"
     receiver_account = "acc-jerry"
     merchant_id = "merchant-002"
-    amount = 1500.25
+    amount = 99999
     currency = "USD"
     transaction_type = "PAYMENT"
     channel = "WEB"
@@ -219,6 +219,29 @@ Invoke-RestMethod -Uri "http://localhost:8080/transactions" `
     -Method POST `
     -ContentType "application/json" `
     -Body $body | ConvertTo-Json
+
+#插入一笔负交易（PowerShell）
+$body = @{
+    transaction_id = [guid]::NewGuid().ToString()
+    idempotency_key = "neg-test-001"
+    event_timestamp = Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ"
+    sender_account = "acc-neg-a"
+    receiver_account = "acc-neg-b"
+    merchant_id = "merchant-neg"
+    amount = -1500.25
+    currency = "USD"
+    transaction_type = "PAYMENT"
+    channel = "WEB"
+    metadata = @{ source = "negative-test" }
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod -Uri "http://localhost:8080/transactions" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body $body
+
+
+
 
 # Bash 脚本版本
 curl -X POST http://localhost:8080/transactions \
@@ -368,8 +391,9 @@ docker-compose restart backend
 curl -X POST http://localhost:8080/validation/run-once -H "Content-Type: application/json" -d '{"limit": 20}'
 
 # 5. 查看审计日志验证结果
-docker-compose exec postgres psql -U transaction_user -d transaction_platform -c \
-  "SELECT * FROM transaction_status_audit ORDER BY changed_at DESC LIMIT 5;"
+docker-compose exec postgres psql -U transaction_user -d transaction_platform -c "\dt"
+docker-compose exec postgres psql -U transaction_user -d transaction_platform -c "SELECT * FROM transactions ORDER BY created_at DESC LIMIT 20;"
+docker-compose exec postgres psql -U transaction_user -d transaction_platform -c "SELECT * FROM transaction_status_audit ORDER BY changed_at DESC LIMIT 20;"
 ```
 
 ### 场景 2：修改数据库 Schema

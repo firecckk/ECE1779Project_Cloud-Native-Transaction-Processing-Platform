@@ -2,6 +2,7 @@ const db = require("../../../../shared/src/db");
 
 const HIGH_AMOUNT_MEDIUM_THRESHOLD = 1000;
 const HIGH_AMOUNT_CRITICAL_THRESHOLD = 5000;
+const HIGH_AMOUNT_LIMIT = 10000;
 const DUPLICATE_LOOKBACK_HOURS = 24;
 const FREQUENCY_LOOKBACK_MINUTES = 10;
 const FREQUENCY_ANOMALY_THRESHOLD = 5;
@@ -43,7 +44,10 @@ async function evaluateRules(client, transaction) {
   let riskScore = 0;
   const reasons = [];
 
-  if (Number(transaction.amount) >= HIGH_AMOUNT_CRITICAL_THRESHOLD) {
+  if (Number(transaction.amount) >= HIGH_AMOUNT_LIMIT) {
+    riskScore = 100;
+    reasons.push("HIGH_AMOUNT_LIMIT");
+  } else if (Number(transaction.amount) >= HIGH_AMOUNT_CRITICAL_THRESHOLD) {
     riskScore += 60;
     reasons.push("HIGH_AMOUNT_CRITICAL");
   } else if (Number(transaction.amount) >= HIGH_AMOUNT_MEDIUM_THRESHOLD) {
