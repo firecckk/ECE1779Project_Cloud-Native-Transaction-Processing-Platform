@@ -18,10 +18,9 @@ This comprehensive guide includes:
 The current implementation includes:
 
 - PostgreSQL database schema and initialization scripts
-- Node.js backend reporting service
-- Kubernetes manifests for local deployment with Minikube
-
-The frontend is still a placeholder and is not part of the Kubernetes deployment yet.
+- Node.js services for ingestion, validation, and reporting
+- A lightweight frontend dashboard served by nginx
+- Kubernetes manifests for a five-pod deployment with Minikube and DOKS
 
 ## Prerequisites
 
@@ -56,11 +55,12 @@ Use [scripts/README.md](scripts/README.md) for the local transaction generator t
 
 The Kubernetes files are organized as follows:
 
-- `k8s/base`: shared manifests for PostgreSQL, backend, config, and network policy
+- `k8s/base`: shared manifests for PostgreSQL, ingestion, validation, reporting, frontend, config, and network policy
 - `k8s/overlays/minikube`: local development overlay for Minikube
+- `k8s/overlays/doks`: DigitalOcean Kubernetes overlay
 
 More deployment details are documented in [k8s/README.md](k8s/README.md).
 
 ## Cloud Deployment
 
-Cloud deployment instructions for DigitalOcean Kubernetes (DOKS) will be added here in a later phase.
+Cloud deployment instructions for DigitalOcean Kubernetes (DOKS) are documented in [k8s/DOKS.md](k8s/DOKS.md).

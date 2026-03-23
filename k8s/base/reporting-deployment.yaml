@@ -1,21 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: transaction-backend
+  name: transaction-reporting
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: transaction-backend
+      app: transaction-reporting
   template:
     metadata:
       labels:
-        app: transaction-backend
+        app: transaction-reporting
     spec:
       containers:
-        - name: backend
+        - name: reporting
           image: transaction-reporting-service:latest
           imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - backend/src/service/reporting/server.js
           ports:
             - containerPort: 8080
               name: http

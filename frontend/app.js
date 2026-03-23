@@ -1,6 +1,4 @@
-const API_BASE = window.location.hostname === "localhost"
-  ? "http://localhost:8080"
-  : "http://backend:8080";
+const API_BASE = "/api";
 
 const statusEl = document.getElementById("status");
 const fromInput = document.getElementById("fromDate");

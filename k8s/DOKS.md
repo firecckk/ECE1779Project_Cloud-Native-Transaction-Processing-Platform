@@ -7,11 +7,10 @@ This guide explains how to deploy the transaction platform to DigitalOcean Kuber
 The current DOKS deployment includes:
 
 - PostgreSQL running inside the cluster with DigitalOcean block storage
-- Backend reporting service exposed through a public `LoadBalancer`
+- Separate ingestion, validation, and reporting Pods built from the backend image
+- Frontend exposed through a public `LoadBalancer`
 - Config and secrets generated from local env files
-- Backend autoscaling through an HPA
-
-The frontend is still excluded because it does not yet serve a real application.
+- Reporting autoscaling through an HPA
 
 ## Prerequisites
 
@@ -117,17 +116,17 @@ The script will:
 - load deployment variables from `deploy.env` if present
 - fetch cluster credentials using `doctl`
 - log Docker into DigitalOcean Container Registry
-- build and push the backend image
+- build and push the backend and frontend images
 - render the DOKS overlay with your registry name and image tag
 - apply Kubernetes resources
 - wait for rollouts
-- print the public backend endpoint
+- print the public frontend endpoint
 
 The verification helper will:
 
 - discover the current `LoadBalancer` endpoint from Kubernetes, or use the URL you pass explicitly
 - call `/health`
-- call `/reports/merchant-ranking?limit=5`
+- call `/api/reports/merchant-ranking?limit=5`
 - fail if either response is not valid for the deployed service
 
 The node scaling helper will:
@@ -152,11 +151,13 @@ doctl kubernetes cluster kubeconfig save "$DOKS_CLUSTER_NAME"
 doctl registry login
 ```
 
-### 3. Build and push the backend image
+### 3. Build and push the application images
 
 ```bash
 docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG -f backend/Dockerfile .
 docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG
+docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG -f frontend/Dockerfile frontend
+docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG
 ```
 
 ### 4. Update the DOKS overlay image reference
@@ -173,13 +174,16 @@ kubectl apply -k k8s/overlays/doks
 
 ```bash
 kubectl rollout status deployment/transaction-postgres -n transaction-platform
-kubectl rollout status deployment/transaction-backend -n transaction-platform
+kubectl rollout status deployment/transaction-ingestion -n transaction-platform
+kubectl rollout status deployment/transaction-validation -n transaction-platform
+kubectl rollout status deployment/transaction-reporting -n transaction-platform
+kubectl rollout status deployment/transaction-frontend -n transaction-platform
 ```
 
-### 7. Get the public backend endpoint
+### 7. Get the public frontend endpoint
 
 ```bash
-kubectl get svc transaction-backend -n transaction-platform
+kubectl get svc transaction-frontend -n transaction-platform
 ```
 
 ## Verification
@@ -188,7 +192,7 @@ Once the `LoadBalancer` IP or hostname appears, validate the API:
 
 ```bash
 curl -s http://<load-balancer-ip-or-hostname>/health
-curl -s "http://<load-balancer-ip-or-hostname>/reports/merchant-ranking?limit=5"
+curl -s "http://<load-balancer-ip-or-hostname>/api/reports/merchant-ranking?limit=5"
 ```
 
 Equivalent scripted check:
@@ -207,10 +211,10 @@ The DOKS-specific manifests live in:
 This overlay:
 
 - replaces the base ConfigMap and Secret with env-file driven values
-- changes the backend service type from `ClusterIP` to `LoadBalancer`
+- changes the frontend service type from `ClusterIP` to `LoadBalancer`
 - changes the PostgreSQL PVC to use `do-block-storage`
-- sets backend image pull policy to `Always`
-- adds an HPA for the backend deployment
+- sets application image pull policy to `Always`
+- adds an HPA for the reporting deployment
 
 ## Cleanup
 

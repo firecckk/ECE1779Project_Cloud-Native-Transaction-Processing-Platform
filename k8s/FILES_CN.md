@@ -18,7 +18,7 @@
 `base/` 目录存放的是通用 Kubernetes 资源定义，描述了项目的核心服务。这些文件设计为可被不同环境复用。
 
 - `base/kustomization.yaml`
-  `base` 层的入口文件。它声明了需要加载的基础资源，并生成 PostgreSQL 和 backend 共同使用的 ConfigMap 与 Secret。
+  `base` 层的入口文件。它声明了需要加载的基础资源，并生成 PostgreSQL 与各应用 Pod 共同使用的 ConfigMap 和 Secret。
 
 - `base/schema.sql`
   Kustomize 在生成数据库初始化 ConfigMap 时使用的本地 schema 副本。之所以放在 `k8s/base` 目录内，是为了避免 `kubectl apply -k` 因路径安全限制而报错。
@@ -35,43 +35,70 @@
 - `base/postgres-service.yaml`
   为 PostgreSQL 提供集群内部访问入口，使其他 Pod 可以通过固定服务名连接数据库。
 
-- `base/backend-deployment.yaml`
-  定义 Node.js reporting service 的 Deployment。它负责注入运行时环境变量，并为 `/health` 配置 readiness 和 liveness 探针。
+- `base/ingestion-deployment.yaml`
+  定义 ingestion 服务的 Deployment，负责运行 `/transactions` 接口和 `/health` 健康检查。
 
-- `base/backend-service.yaml`
-  在集群内部暴露 backend 服务，端口为 `8080`。
+- `base/ingestion-service.yaml`
+  在集群内部暴露 ingestion 服务，端口为 `8080`。
+
+- `base/validation-deployment.yaml`
+  定义 validation Worker 的 Deployment，负责轮询处理待校验交易，并提供 validation 健康接口。
+
+- `base/validation-service.yaml`
+  在集群内部暴露 validation 服务，端口为 `8080`。
+
+- `base/reporting-deployment.yaml`
+  定义 reporting 服务的 Deployment，负责运行 `/reports` 接口和 `/health` 健康检查。
+
+- `base/reporting-service.yaml`
+  在集群内部暴露 reporting 服务，端口为 `8080`。
+
+- `base/frontend-deployment.yaml`
+  定义 frontend Deployment，负责运行 nginx 静态页面并把 `/api/*` 反向代理到 reporting 服务。
+
+- `base/frontend-service.yaml`
+  在集群内部暴露 frontend 服务，端口为 `3000`。
 
 - `base/network-policy.yaml`
-  为 PostgreSQL 设置网络访问限制，只允许 backend Pod 通过 TCP `5432` 访问数据库。
+  为 PostgreSQL 设置网络访问限制，只允许 ingestion、validation 和 reporting Pod 通过 TCP `5432` 访问数据库。
 
 ## overlays/minikube/
 
 `overlays/minikube/` 目录存放 Minikube 本地开发环境专用的覆盖配置。
 
 - `overlays/minikube/kustomization.yaml`
-  Minikube overlay 的入口文件。它引用共享的 `base/` 资源，并对本地环境做定制，例如把 backend 镜像标签替换为本地构建版本。
+  Minikube overlay 的入口文件。它引用共享的 `base/` 资源，并对本地环境做定制，例如把 backend 和 frontend 镜像标签替换为本地构建版本。
 
-- `overlays/minikube/backend-service-patch.yaml`
-  覆盖 backend Service 的类型，把 `ClusterIP` 改为 `NodePort`，这样本地开发时可以从集群外直接访问 backend。
+- `overlays/minikube/frontend-service-patch.yaml`
+  覆盖 frontend Service 的类型，把 `ClusterIP` 改为 `NodePort`，这样本地开发时可以从集群外直接访问前端入口。
 
 ## overlays/doks/
 
 `overlays/doks/` 目录存放 DigitalOcean Kubernetes 云环境专用的覆盖配置。
 
 - `overlays/doks/kustomization.yaml`
-  DOKS overlay 的入口文件。它会替换基础层中的 ConfigMap 和 Secret 生成逻辑，指向 DigitalOcean Container Registry 中的 backend 镜像，并应用云环境专用 patch。
+  DOKS overlay 的入口文件。它会替换基础层中的 ConfigMap 和 Secret 生成逻辑，指向 DigitalOcean Container Registry 中的 backend 与 frontend 镜像，并应用云环境专用 patch。
 
-- `overlays/doks/backend-service-patch.yaml`
-  把 backend Service 改成 `LoadBalancer`，让 DigitalOcean 为它分配公网访问入口。
+- `overlays/doks/frontend-service-patch.yaml`
+  把 frontend Service 改成 `LoadBalancer`，让 DigitalOcean 为它分配公网访问入口。
 
 - `overlays/doks/postgres-pvc-patch.yaml`
   把 PostgreSQL 存储改成 `do-block-storage`，并提高磁盘容量，以适应云环境。
 
-- `overlays/doks/backend-deployment-patch.yaml`
-  对 backend Deployment 做云环境调整，包括增加副本数、设置 `imagePullPolicy: Always`，以及修改资源请求与限制。
+- `overlays/doks/reporting-deployment-patch.yaml`
+  对 reporting Deployment 做云环境调整，包括增加副本数、设置 `imagePullPolicy: Always`，以及修改资源请求与限制。
+
+- `overlays/doks/ingestion-deployment-patch.yaml`
+  为 ingestion Deployment 设置 `imagePullPolicy: Always`，确保云端滚动更新时拉取最新镜像。
+
+- `overlays/doks/validation-deployment-patch.yaml`
+  为 validation Deployment 设置 `imagePullPolicy: Always`，确保云端滚动更新时拉取最新镜像。
+
+- `overlays/doks/frontend-deployment-patch.yaml`
+  为 frontend Deployment 设置 `imagePullPolicy: Always`，确保云端滚动更新时拉取最新镜像。
 
 - `overlays/doks/hpa.yaml`
-  为 backend Deployment 增加水平自动扩缩容配置。
+  为 reporting Deployment 增加水平自动扩缩容配置。
 
 - `overlays/doks/config.env.example`
   非敏感配置示例文件。部署到 DOKS 前应复制成 `config.env` 并按环境修改。
@@ -88,10 +115,13 @@
   项目数据库设计的源 schema 文件。后续如果 schema 有变更，需要和 `base/schema.sql` 保持一致。
 
 - `backend/Dockerfile`
-  backend 服务的容器镜像构建文件，Kubernetes 部署时使用该镜像运行应用。
+  backend 服务的容器镜像构建文件，ingestion、validation 和 reporting 三个 Pod 都复用这个镜像。
+
+- `frontend/Dockerfile`
+  frontend 服务的容器镜像构建文件，Kubernetes 部署时使用该镜像运行 nginx 前端。
 
 - `docker-compose.yml`
   另一套本地容器编排方式。它不属于 Kubernetes 部署流程，但在用途上和本地 K8s 部署类似，适合 Docker Compose 场景。
 
 - `scripts/doks-deploy.sh`
-  云部署辅助脚本。它支持从 `deploy.env` 读取部署变量，并完成 kubeconfig 获取、镜像构建与推送，以及 DOKS overlay 的应用。
+  云部署辅助脚本。它支持从 `deploy.env` 读取部署变量，并完成 kubeconfig 获取、backend 与 frontend 镜像构建推送，以及 DOKS overlay 的应用。

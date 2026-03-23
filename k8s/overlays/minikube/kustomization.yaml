@@ -10,6 +10,9 @@ images:
   - name: transaction-reporting-service
     newName: transaction-reporting-service
     newTag: local
+  - name: transaction-frontend
+    newName: transaction-frontend
+    newTag: local
 
 patches:
-  - path: backend-service-patch.yaml
+  - path: frontend-service-patch.yaml

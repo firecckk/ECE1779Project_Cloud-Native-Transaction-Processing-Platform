@@ -63,10 +63,10 @@ wait_for_load_balancer() {
   local attempt=1
 
   while (( attempt <= 30 )); do
-    endpoint="$(kubectl get svc transaction-backend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+    endpoint="$(kubectl get svc transaction-frontend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
 
     if [[ -z "$endpoint" ]]; then
-      endpoint="$(kubectl get svc transaction-backend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+      endpoint="$(kubectl get svc transaction-frontend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
     fi
 
     if [[ -n "$endpoint" ]]; then
@@ -112,18 +112,26 @@ echo "[doks-deploy] logging into DigitalOcean Container Registry"
 doctl registry login --expiry-seconds 1200
 
 BACKEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG"
+FRONTEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG"
 
 echo "[doks-deploy] building backend image '$BACKEND_IMAGE'"
-docker build -t "$BACKEND_IMAGE" "$REPO_ROOT/backend"
+docker build -t "$BACKEND_IMAGE" -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
 
 echo "[doks-deploy] pushing backend image '$BACKEND_IMAGE'"
 docker push "$BACKEND_IMAGE"
+
+echo "[doks-deploy] building frontend image '$FRONTEND_IMAGE'"
+docker build -t "$FRONTEND_IMAGE" -f "$REPO_ROOT/frontend/Dockerfile" "$REPO_ROOT/frontend"
+
+echo "[doks-deploy] pushing frontend image '$FRONTEND_IMAGE'"
+docker push "$FRONTEND_IMAGE"
 
 echo "[doks-deploy] preparing temporary DOKS overlay"
 mkdir -p "$TEMP_K8S_ROOT/overlays"
 cp -R "$REPO_ROOT/k8s/base" "$TEMP_K8S_ROOT/base"
 cp -R "$OVERLAY_DIR" "$TEMP_OVERLAY_DIR"
 sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-reporting-service|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
+sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-frontend|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 sed -i "s|newTag: latest|newTag: $IMAGE_TAG|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 
 echo "[doks-deploy] applying kubernetes overlay"
@@ -132,11 +140,14 @@ kubectl apply -k "$TEMP_OVERLAY_DIR"
 echo "[doks-deploy] waiting for postgres rollout"
 kubectl rollout status deployment/transaction-postgres -n "$NAMESPACE" --timeout=300s
 
-echo "[doks-deploy] waiting for backend rollout"
-kubectl rollout status deployment/transaction-backend -n "$NAMESPACE" --timeout=300s
+echo "[doks-deploy] waiting for application rollouts"
+kubectl rollout status deployment/transaction-ingestion -n "$NAMESPACE" --timeout=300s
+kubectl rollout status deployment/transaction-validation -n "$NAMESPACE" --timeout=300s
+kubectl rollout status deployment/transaction-reporting -n "$NAMESPACE" --timeout=300s
+kubectl rollout status deployment/transaction-frontend -n "$NAMESPACE" --timeout=300s
 
 echo "[doks-deploy] waiting for load balancer endpoint"
 LOAD_BALANCER_ENDPOINT="$(wait_for_load_balancer)"
 
-echo "[doks-deploy] backend endpoint: http://$LOAD_BALANCER_ENDPOINT"
+echo "[doks-deploy] frontend endpoint: http://$LOAD_BALANCER_ENDPOINT"
 echo "[doks-deploy] health check: http://$LOAD_BALANCER_ENDPOINT/health"

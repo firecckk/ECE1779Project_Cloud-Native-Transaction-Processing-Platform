@@ -42,14 +42,17 @@ require_command curl
 
 echo "[local-verify] ensuring deployments are ready"
 kubectl rollout status deployment/transaction-postgres -n "$NAMESPACE" --timeout=180s >/dev/null
-kubectl rollout status deployment/transaction-backend -n "$NAMESPACE" --timeout=180s >/dev/null
+kubectl rollout status deployment/transaction-ingestion -n "$NAMESPACE" --timeout=180s >/dev/null
+kubectl rollout status deployment/transaction-validation -n "$NAMESPACE" --timeout=180s >/dev/null
+kubectl rollout status deployment/transaction-reporting -n "$NAMESPACE" --timeout=180s >/dev/null
+kubectl rollout status deployment/transaction-frontend -n "$NAMESPACE" --timeout=180s >/dev/null
 
-SERVICE_URL="$(minikube service transaction-backend -n "$NAMESPACE" -p "$MINIKUBE_PROFILE" --url)"
+SERVICE_URL="$(minikube service transaction-frontend -n "$NAMESPACE" -p "$MINIKUBE_PROFILE" --url)"
 
-echo "[local-verify] backend url: $SERVICE_URL"
+echo "[local-verify] frontend url: $SERVICE_URL"
 
 HEALTH_RESPONSE="$(fetch_with_retries "$SERVICE_URL/health")"
-REPORT_RESPONSE="$(fetch_with_retries "$SERVICE_URL/reports/merchant-ranking?limit=5")"
+REPORT_RESPONSE="$(fetch_with_retries "$SERVICE_URL/api/reports/merchant-ranking?limit=5")"
 
 if [[ "$HEALTH_RESPONSE" != *'"status":"ok"'* ]]; then
   echo "[local-verify] unexpected health response: $HEALTH_RESPONSE" >&2
