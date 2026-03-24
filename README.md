@@ -64,3 +64,41 @@ More deployment details are documented in [k8s/README.md](k8s/README.md).
 ## Cloud Deployment
 
 Cloud deployment instructions for DigitalOcean Kubernetes (DOKS) are documented in [k8s/DOKS.md](k8s/DOKS.md).
+
+## GitHub CI/CD
+
+The repository now includes GitHub Actions workflows under `.github/workflows/`:
+
+- `ci.yml`: runs on pushes, pull requests, and manual dispatch. It installs backend dependencies, renders the Kubernetes overlays with `kubectl kustomize`, starts a temporary Minikube cluster, deploys the application with the existing `scripts/local-deploy.sh`, and verifies the frontend and reporting API with `scripts/local-verify.sh`.
+- `deploy-doks.yml`: deploys to DigitalOcean Kubernetes after the `CI` workflow succeeds on `main`, or by manual dispatch.
+
+The old `docker-compose.yml` is not part of this CI/CD path.
+
+### Required GitHub configuration
+
+Add these repository or environment secrets before enabling DOKS deployment:
+
+- `DIGITALOCEAN_ACCESS_TOKEN`: DigitalOcean API token used by `doctl`.
+- `DOKS_CONFIG_ENV`: multiline content for `k8s/overlays/doks/config.env`.
+- `DOKS_SECRETS_ENV`: multiline content for `k8s/overlays/doks/secrets.env`.
+
+Add these repository or environment variables:
+
+- `DOKS_CLUSTER_NAME`: target DOKS cluster name.
+- `DOKR_REGISTRY_NAME`: DigitalOcean Container Registry name.
+- `K8S_NAMESPACE`: optional override for the Kubernetes namespace. If omitted, the workflow uses `transaction-platform`.
+
+Recommended rollout on GitHub:
+
+1. Protect the `main` branch so deployment only happens after pull requests pass `CI`.
+2. Use a GitHub Environment such as `production` and attach approval rules if you want a manual gate before `deploy-doks.yml` runs.
+3. Store `DOKS_CONFIG_ENV` and `DOKS_SECRETS_ENV` as multiline secrets copied from the DOKS overlay examples, with production values substituted.
+
+The deployment workflow tags images with the triggering commit SHA by default, which makes rollbacks and deployment traceability simpler.
+
+Recommended split of responsibilities:
+
+- CI: use Minikube as an ephemeral Kubernetes environment on the GitHub runner to validate the manifests, images, and smoke tests.
+- CD: use DOKS as the real deployment target for persistent environments.
+
+If you want to deploy to Minikube from GitHub Actions, use a self-hosted runner attached to the machine that actually runs the Minikube cluster. GitHub-hosted runners are ephemeral, so a Minikube deployment there only makes sense for CI validation, not as a persistent release environment.

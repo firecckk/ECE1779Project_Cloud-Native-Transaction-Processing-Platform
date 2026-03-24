@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - .github/workflows/**
+      - backend/**
+      - frontend/**
+      - shared/**
+      - k8s/**
+      - scripts/**
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - backend/**
+      - frontend/**
+      - shared/**
+      - k8s/**
+      - scripts/**
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-k8s-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Verify backend modules load
+        run: |
+          node - <<'EOF'
+          const createApp = require('./backend/src/createApp');
+
+          createApp('all');
+          createApp('ingestion');
+          createApp('reporting');
+          createApp('validation');
+
+          console.log('backend modules loaded successfully');
+          EOF
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - name: Install Minikube prerequisites
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y conntrack
+
+      - name: Install Minikube
+        run: |
+          set -euo pipefail
+          curl -fsSL -o minikube-linux-amd64 https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          rm -f minikube-linux-amd64
+
+      - name: Validate Kubernetes manifests
+        run: |
+          set -euo pipefail
+          kubectl kustomize k8s/overlays/minikube >/dev/null
+          cp k8s/overlays/doks/config.env.example k8s/overlays/doks/config.env
+          cp k8s/overlays/doks/secrets.env.example k8s/overlays/doks/secrets.env
+          kubectl kustomize k8s/overlays/doks >/dev/null
+
+      - name: Start Minikube-based integration environment
+        env:
+          MINIKUBE_PROFILE: github-actions
+          MINIKUBE_DRIVER: docker
+        run: ./scripts/local-deploy.sh
+
+      - name: Verify Kubernetes deployment
+        env:
+          MINIKUBE_PROFILE: github-actions
+        run: ./scripts/local-verify.sh
+
+      - name: Collect Kubernetes diagnostics on failure
+        if: failure()
+        run: |
+          set -euo pipefail
+          kubectl get all -n transaction-platform || true
+          kubectl get pvc -n transaction-platform || true
+          kubectl logs deployment/transaction-postgres -n transaction-platform || true
+          kubectl logs deployment/transaction-ingestion -n transaction-platform || true
+          kubectl logs deployment/transaction-validation -n transaction-platform || true
+          kubectl logs deployment/transaction-reporting -n transaction-platform || true
+          kubectl logs deployment/transaction-frontend -n transaction-platform || true
+
+      - name: Stop Minikube environment
+        if: always()
+        env:
+          MINIKUBE_PROFILE: github-actions
+          STOP_MINIKUBE: '1'
+        run: ./scripts/local-cleanup.sh
