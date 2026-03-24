@@ -42,6 +42,8 @@ jobs:
         run: npm install
 
       - name: Verify backend modules load
+        env:
+          NODE_PATH: backend/node_modules
         run: |
           node - <<'EOF'
           const createApp = require('./backend/src/createApp');
