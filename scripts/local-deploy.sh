@@ -36,12 +36,17 @@ else
   echo "[local-deploy] reusing existing minikube profile '$MINIKUBE_PROFILE'"
 fi
 
-echo "[local-deploy] building backend image '$BACKEND_IMAGE' inside minikube docker daemon"
-eval "$(minikube -p "$MINIKUBE_PROFILE" docker-env --shell bash)"
-docker build -t "$BACKEND_IMAGE" -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
+echo "[local-deploy] building backend image '$BACKEND_IMAGE' inside minikube"
+(
+  cd "$REPO_ROOT"
+  minikube -p "$MINIKUBE_PROFILE" image build -t "$BACKEND_IMAGE" -f backend/Dockerfile .
+)
 
-echo "[local-deploy] building frontend image '$FRONTEND_IMAGE' inside minikube docker daemon"
-docker build -t "$FRONTEND_IMAGE" -f "$REPO_ROOT/frontend/Dockerfile" "$REPO_ROOT/frontend"
+echo "[local-deploy] building frontend image '$FRONTEND_IMAGE' inside minikube"
+(
+  cd "$REPO_ROOT/frontend"
+  minikube -p "$MINIKUBE_PROFILE" image build -t "$FRONTEND_IMAGE" -f Dockerfile .
+)
 
 echo "[local-deploy] applying kubernetes overlay '$OVERLAY_PATH'"
 kubectl apply -k "$OVERLAY_PATH"
