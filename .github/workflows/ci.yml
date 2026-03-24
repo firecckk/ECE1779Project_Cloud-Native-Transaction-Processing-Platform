@@ -67,6 +67,15 @@ jobs:
           cpus: 2
           memory: 4000m
 
+      - name: Configure kubectl for Minikube
+        run: |
+          set -euo pipefail
+          minikube profile list
+          minikube update-context -p minikube
+          kubectl config use-context minikube
+          kubectl config current-context
+          kubectl cluster-info
+
       - name: Validate Kubernetes manifests
         run: |
           set -euo pipefail
@@ -98,6 +107,9 @@ jobs:
         if: failure()
         run: |
           set -euo pipefail
+          minikube profile list || true
+          kubectl config current-context || true
+          kubectl cluster-info || true
           kubectl get all -n transaction-platform || true
           kubectl get pvc -n transaction-platform || true
           kubectl logs deployment/transaction-postgres -n transaction-platform || true
