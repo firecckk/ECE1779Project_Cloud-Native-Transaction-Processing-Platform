@@ -83,7 +83,7 @@ jobs:
 
       - name: Start Minikube-based integration environment
         env:
-          MINIKUBE_PROFILE: github-actions
+          MINIKUBE_PROFILE: minikube
           MINIKUBE_DRIVER: docker
           SKIP_MINIKUBE_START: '1'
           SKIP_LOCAL_VERIFY: '1'
@@ -91,7 +91,7 @@ jobs:
 
       - name: Verify Kubernetes deployment
         env:
-          MINIKUBE_PROFILE: github-actions
+          MINIKUBE_PROFILE: minikube
         run: ./scripts/local-verify.sh
 
       - name: Collect Kubernetes diagnostics on failure
@@ -109,6 +109,6 @@ jobs:
       - name: Stop Minikube environment
         if: always()
         env:
-          MINIKUBE_PROFILE: github-actions
+          MINIKUBE_PROFILE: minikube
           STOP_MINIKUBE: '1'
         run: ./scripts/local-cleanup.sh
