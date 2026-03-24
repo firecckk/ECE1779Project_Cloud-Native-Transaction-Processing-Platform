@@ -72,8 +72,6 @@ The repository now includes GitHub Actions workflows under `.github/workflows/`:
 - `ci.yml`: runs on pushes, pull requests, and manual dispatch. It installs backend dependencies, renders the Kubernetes overlays with `kubectl kustomize`, starts a temporary Minikube cluster, deploys the application with the existing `scripts/local-deploy.sh`, and verifies the frontend and reporting API with `scripts/local-verify.sh`.
 - `deploy-doks.yml`: deploys to DigitalOcean Kubernetes after the `CI` workflow succeeds on `main`, or by manual dispatch.
 
-The old `docker-compose.yml` is not part of this CI/CD path.
-
 ### Required GitHub configuration
 
 Add these repository or environment secrets before enabling DOKS deployment:
