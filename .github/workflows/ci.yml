@@ -59,18 +59,13 @@ jobs:
         with:
           version: v1.31.0
 
-      - name: Install Minikube prerequisites
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y conntrack
-
-      - name: Install Minikube
-        run: |
-          set -euo pipefail
-          curl -fsSL -o minikube-linux-amd64 https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube-linux-amd64 /usr/local/bin/minikube
-          rm -f minikube-linux-amd64
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          driver: docker
+          container-runtime: containerd
+          cpus: 2
+          memory: 4000m
 
       - name: Validate Kubernetes manifests
         run: |
@@ -80,10 +75,18 @@ jobs:
           cp k8s/overlays/doks/secrets.env.example k8s/overlays/doks/secrets.env
           kubectl kustomize k8s/overlays/doks >/dev/null
 
+      - name: Confirm Minikube cluster is reachable
+        run: |
+          set -euo pipefail
+          minikube status
+          kubectl get nodes
+
       - name: Start Minikube-based integration environment
         env:
           MINIKUBE_PROFILE: github-actions
           MINIKUBE_DRIVER: docker
+          SKIP_MINIKUBE_START: '1'
+          SKIP_LOCAL_VERIFY: '1'
         run: ./scripts/local-deploy.sh
 
       - name: Verify Kubernetes deployment
