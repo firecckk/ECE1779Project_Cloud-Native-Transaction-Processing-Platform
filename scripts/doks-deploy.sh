@@ -157,11 +157,15 @@ sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-repor
 sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-frontend|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 sed -i "s|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service|registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 sed -i "s|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend|registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
-sed -i "0,/newTag: latest/s|newTag: latest|newTag: $BACKEND_IMAGE_TAG|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
-sed -i "0,/newTag: latest/! {0,/newTag: latest/s|newTag: latest|newTag: $FRONTEND_IMAGE_TAG|}" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 
 echo "[doks-deploy] applying kubernetes overlay"
 kubectl apply -k "$TEMP_OVERLAY_DIR"
+
+echo "[doks-deploy] setting deployment images explicitly"
+kubectl set image deployment/transaction-ingestion -n "$NAMESPACE" ingestion="$BACKEND_IMAGE"
+kubectl set image deployment/transaction-validation -n "$NAMESPACE" validation="$BACKEND_IMAGE"
+kubectl set image deployment/transaction-reporting -n "$NAMESPACE" reporting="$BACKEND_IMAGE"
+kubectl set image deployment/transaction-frontend -n "$NAMESPACE" frontend="$FRONTEND_IMAGE"
 
 echo "[doks-deploy] waiting for postgres rollout"
 kubectl rollout status deployment/transaction-postgres -n "$NAMESPACE" --timeout=300s
