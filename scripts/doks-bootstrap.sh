@@ -14,7 +14,7 @@ DOKR_REGISTRY_NAME="${DOKR_REGISTRY_NAME:-}"
 NAMESPACE="${NAMESPACE:-}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 DOKS_REGION="${DOKS_REGION:-tor1}"
-DOKS_NODE_SIZE="${DOKS_NODE_SIZE:-s-2vcpu-4gb}"
+DOKS_NODE_SIZE="${DOKS_NODE_SIZE:-s-1vcpu-2gb}"
 DOKS_NODE_COUNT="${DOKS_NODE_COUNT:-1}"
 DOKS_NODE_POOL_NAME="${DOKS_NODE_POOL_NAME:-transaction-platform-default-pool}"
 DOKS_AUTO_SCALE="${DOKS_AUTO_SCALE:-true}"
@@ -44,7 +44,7 @@ Optional environment variables:
   NAMESPACE                 Default: transaction-platform
   IMAGE_TAG                 Default: latest
   DOKS_REGION               Default: tor1
-  DOKS_NODE_SIZE            Default: s-2vcpu-4gb
+  DOKS_NODE_SIZE            Default: s-1vcpu-2gb
   DOKS_NODE_COUNT           Default: 1
   DOKS_NODE_POOL_NAME       Default: transaction-platform-default-pool
   DOKS_AUTO_SCALE           Default: true
@@ -94,7 +94,7 @@ apply_defaults() {
   NAMESPACE="${NAMESPACE:-transaction-platform}"
   IMAGE_TAG="${IMAGE_TAG:-latest}"
   DOKS_REGION="${DOKS_REGION:-tor1}"
-  DOKS_NODE_SIZE="${DOKS_NODE_SIZE:-s-2vcpu-4gb}"
+  DOKS_NODE_SIZE="${DOKS_NODE_SIZE:-s-1vcpu-2gb}"
   DOKS_NODE_COUNT="${DOKS_NODE_COUNT:-1}"
   DOKS_NODE_POOL_NAME="${DOKS_NODE_POOL_NAME:-transaction-platform-default-pool}"
   DOKS_AUTO_SCALE="${DOKS_AUTO_SCALE:-true}"

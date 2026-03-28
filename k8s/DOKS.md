@@ -62,7 +62,7 @@ Example command:
 doctl kubernetes cluster create transaction-platform \
   --region tor1 \
   --version latest \
-  --node-pool "name=transaction-platform-default-pool;size=s-2vcpu-4gb;count=1;auto-scale=true;min-nodes=1;max-nodes=3"
+  --node-pool "name=transaction-platform-default-pool;size=s-1vcpu-2gb;count=1;auto-scale=true;min-nodes=1;max-nodes=3"
 ```
 
 ### 2. Create a DigitalOcean Container Registry
@@ -103,7 +103,7 @@ DOKR_REGISTRY_NAME=transaction-platform
 IMAGE_TAG=$(git rev-parse --short HEAD)
 NAMESPACE=transaction-platform
 DOKS_REGION=tor1
-DOKS_NODE_SIZE=s-2vcpu-4gb
+DOKS_NODE_SIZE=s-1vcpu-2gb
 DOKS_NODE_COUNT=1
 DOKS_NODE_POOL_NAME=transaction-platform-default-pool
 DOKS_AUTO_SCALE=true
