@@ -106,7 +106,11 @@ if [[ ! -f "$OVERLAY_DIR/secrets.env" ]]; then
 fi
 
 echo "[doks-deploy] saving kubeconfig for cluster '$DOKS_CLUSTER_NAME'"
-doctl kubernetes cluster kubeconfig save "$DOKS_CLUSTER_NAME"
+if ! doctl kubernetes cluster kubeconfig save "$DOKS_CLUSTER_NAME"; then
+  echo "[doks-deploy] cluster '$DOKS_CLUSTER_NAME' was not found" >&2
+  echo "[doks-deploy] create it with ./scripts/doks-bootstrap.sh or update DOKS_CLUSTER_NAME to an existing cluster" >&2
+  exit 1
+fi
 
 echo "[doks-deploy] logging into DigitalOcean Container Registry"
 doctl registry login --expiry-seconds 1200

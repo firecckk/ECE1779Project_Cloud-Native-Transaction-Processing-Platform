@@ -27,6 +27,13 @@ jobs:
     environment: production
     permissions:
       contents: read
+    env:
+      DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      DOKS_CONFIG_ENV_CONTENT: ${{ secrets.DOKS_CONFIG_ENV }}
+      DOKS_SECRETS_ENV_CONTENT: ${{ secrets.DOKS_SECRETS_ENV }}
+      DOKS_CLUSTER_NAME: ${{ vars.DOKS_CLUSTER_NAME }}
+      DOKR_REGISTRY_NAME: ${{ vars.DOKR_REGISTRY_NAME }}
+      K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
 
     steps:
       - name: Checkout triggering commit
@@ -45,10 +52,37 @@ jobs:
             echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Validate deployment configuration
+        run: |
+          set -euo pipefail
+
+          missing=0
+
+          check_required() {
+            local name="$1"
+            local value="$2"
+
+            if [ -z "$value" ]; then
+              echo "::error title=Missing GitHub configuration::$name is not configured for deploy-doks.yml"
+              missing=1
+            fi
+          }
+
+          check_required "DIGITALOCEAN_ACCESS_TOKEN secret" "$DIGITALOCEAN_ACCESS_TOKEN"
+          check_required "DOKS_CONFIG_ENV secret" "$DOKS_CONFIG_ENV_CONTENT"
+          check_required "DOKS_SECRETS_ENV secret" "$DOKS_SECRETS_ENV_CONTENT"
+          check_required "DOKS_CLUSTER_NAME variable" "$DOKS_CLUSTER_NAME"
+          check_required "DOKR_REGISTRY_NAME variable" "$DOKR_REGISTRY_NAME"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "::warning title=Deployment skipped until configuration is added::Configure the required GitHub secrets and variables, then rerun the workflow."
+            exit 1
+          fi
+
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ env.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -56,23 +90,27 @@ jobs:
           version: v1.31.0
 
       - name: Materialize DOKS environment files
-        env:
-          DOKS_CONFIG_ENV_CONTENT: ${{ secrets.DOKS_CONFIG_ENV }}
-          DOKS_SECRETS_ENV_CONTENT: ${{ secrets.DOKS_SECRETS_ENV }}
         run: |
           set -euo pipefail
           printf '%s\n' "$DOKS_CONFIG_ENV_CONTENT" > k8s/overlays/doks/config.env
           printf '%s\n' "$DOKS_SECRETS_ENV_CONTENT" > k8s/overlays/doks/secrets.env
 
+      - name: Ensure DOKS infrastructure exists
+        env:
+          DOKS_CLUSTER_NAME: ${{ env.DOKS_CLUSTER_NAME }}
+          DOKR_REGISTRY_NAME: ${{ env.DOKR_REGISTRY_NAME }}
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
+        run: ./scripts/doks-bootstrap.sh
+
       - name: Deploy to DigitalOcean Kubernetes
         env:
-          DOKS_CLUSTER_NAME: ${{ vars.DOKS_CLUSTER_NAME }}
-          DOKR_REGISTRY_NAME: ${{ vars.DOKR_REGISTRY_NAME }}
-          NAMESPACE: ${{ vars.K8S_NAMESPACE != '' && vars.K8S_NAMESPACE || 'transaction-platform' }}
+          DOKS_CLUSTER_NAME: ${{ env.DOKS_CLUSTER_NAME }}
+          DOKR_REGISTRY_NAME: ${{ env.DOKR_REGISTRY_NAME }}
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
           IMAGE_TAG: ${{ steps.image-tag.outputs.value }}
         run: ./scripts/doks-deploy.sh
 
       - name: Verify deployment
         env:
-          NAMESPACE: ${{ vars.K8S_NAMESPACE != '' && vars.K8S_NAMESPACE || 'transaction-platform' }}
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
         run: ./scripts/doks-verify.sh
