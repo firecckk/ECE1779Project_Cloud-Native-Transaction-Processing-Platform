@@ -149,6 +149,7 @@ The script will:
 - load deployment variables from `deploy.env` if present
 - fetch cluster credentials using `doctl`
 - log Docker into DigitalOcean Container Registry
+- install a registry pull secret in the target namespace so Pods can pull private DOCR images
 - build and push the backend and frontend images
 - publish both images into a single DOCR repository using different tags so the workflow works with registries limited to one repository
 - render the DOKS overlay with your registry name and image tag

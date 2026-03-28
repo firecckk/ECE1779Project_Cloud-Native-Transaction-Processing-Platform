@@ -40,6 +40,19 @@ require_env() {
   fi
 }
 
+ensure_registry_pull_secret() {
+  local secret_name="registry-$DOKR_REGISTRY_NAME"
+
+  echo "[doks-deploy] syncing registry pull secret '$secret_name' into namespace '$NAMESPACE'"
+  doctl registry kubernetes-manifest "$DOKR_REGISTRY_NAME" \
+    | sed "s/namespace: kube-system/namespace: $NAMESPACE/" \
+    | kubectl apply -f -
+
+  echo "[doks-deploy] attaching registry pull secret to default service account"
+  kubectl patch serviceaccount default -n "$NAMESPACE" --type merge -p \
+    "{\"imagePullSecrets\":[{\"name\":\"$secret_name\"}]}"
+}
+
 load_env_file() {
   local file_path="$1"
 
@@ -116,6 +129,8 @@ fi
 
 echo "[doks-deploy] logging into DigitalOcean Container Registry"
 doctl registry login --expiry-seconds 1200
+
+ensure_registry_pull_secret
 
 BACKEND_IMAGE_TAG="backend-$IMAGE_TAG"
 FRONTEND_IMAGE_TAG="frontend-$IMAGE_TAG"

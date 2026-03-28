@@ -47,6 +47,9 @@ System-managed database fields such as `status`, `risk_score`, `created_at`, and
 - `doks-scale-nodes.sh`
 	Scales the current DOKS node pool to the requested node count.
 
+- `pod-node-distribution.sh`
+	Shows which Pods are running on which Kubernetes nodes, with an optional namespace or node filter.
+
 Examples:
 
 ```bash
@@ -56,6 +59,9 @@ SYNC_GITHUB_CD=1 GITHUB_REPOSITORY=owner/repo DIGITALOCEAN_ACCESS_TOKEN=... ./sc
 DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh transaction-platform
 ./scripts/doks-scale-nodes.sh 2
 ./scripts/doks-scale-nodes.sh 3 pool-2h5y79uc1
+./scripts/pod-node-distribution.sh
+./scripts/pod-node-distribution.sh -A
+./scripts/pod-node-distribution.sh --node transaction-platform-default-pool-xxxx
 ```
 
 ## Schema Sync Scripts
