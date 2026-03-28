@@ -28,6 +28,32 @@ doctl auth init
 
 ## One-Time Setup
 
+Recommended path: use the bootstrap helper under `scripts/` to create the infrastructure and generate a consistent local deployment configuration.
+
+```bash
+./scripts/doks-bootstrap.sh
+```
+
+If you also want to sync the required GitHub Actions repository variables and secrets automatically, run:
+
+```bash
+SYNC_GITHUB_CD=1 \
+GITHUB_REPOSITORY=<owner>/<repo> \
+DIGITALOCEAN_ACCESS_TOKEN=<your-do-token> \
+./scripts/doks-bootstrap.sh
+```
+
+The bootstrap script will:
+
+- create a DOKS cluster if it does not already exist
+- create a DigitalOcean Container Registry if it does not already exist
+- write `k8s/overlays/doks/deploy.env` with canonical values
+- create `config.env` and `secrets.env` from examples if missing
+- save kubeconfig for the cluster
+- optionally sync the GitHub CD secrets and variables
+
+You can still do the setup manually if you prefer.
+
 ### 1. Create a DOKS cluster
 
 Example command:
@@ -36,8 +62,7 @@ Example command:
 doctl kubernetes cluster create transaction-platform \
   --region tor1 \
   --version latest \
-  --size s-2vcpu-4gb \
-  --count 2
+  --node-pool "name=transaction-platform-default-pool;size=s-2vcpu-4gb;count=1;auto-scale=true;min-nodes=1;max-nodes=3"
 ```
 
 ### 2. Create a DigitalOcean Container Registry
@@ -77,6 +102,14 @@ DOKS_CLUSTER_NAME=transaction-platform
 DOKR_REGISTRY_NAME=transaction-platform
 IMAGE_TAG=$(git rev-parse --short HEAD)
 NAMESPACE=transaction-platform
+DOKS_REGION=tor1
+DOKS_NODE_SIZE=s-2vcpu-4gb
+DOKS_NODE_COUNT=1
+DOKS_NODE_POOL_NAME=transaction-platform-default-pool
+DOKS_AUTO_SCALE=true
+DOKS_MIN_NODES=1
+DOKS_MAX_NODES=3
+DOKS_K8S_VERSION=latest
 ```
 
 If you prefer, you can still override them directly in the shell:
@@ -122,6 +155,18 @@ The script will:
 - wait for rollouts
 - print the public frontend endpoint
 
+For GitHub Actions CD, configure these repository or environment secrets:
+
+- `DIGITALOCEAN_ACCESS_TOKEN`
+- `DOKS_CONFIG_ENV`
+- `DOKS_SECRETS_ENV`
+
+Configure these repository or environment variables:
+
+- `DOKS_CLUSTER_NAME`
+- `DOKR_REGISTRY_NAME`
+- `K8S_NAMESPACE`
+
 The verification helper will:
 
 - discover the current `LoadBalancer` endpoint from Kubernetes, or use the URL you pass explicitly
@@ -134,6 +179,15 @@ The node scaling helper will:
 - load `DOKS_CLUSTER_NAME` and optional `DOKS_NODE_POOL_NAME` from `deploy.env`
 - auto-select the first node pool if a pool name is not provided
 - submit a `doctl kubernetes cluster node-pool update --count <N>` request
+
+Default DOKS node-pool sizing in this repository is now:
+
+- initial node count: `1`
+- autoscaling enabled: `true`
+- minimum nodes: `1`
+- maximum nodes: `3`
+
+This keeps the base cloud cost lower while still allowing the cluster to scale up under load.
 
 ## Manual Deployment
 

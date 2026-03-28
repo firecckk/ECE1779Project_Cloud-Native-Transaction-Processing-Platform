@@ -134,6 +134,7 @@ The workflows intentionally reuse the same scripts used by local development:
 - `scripts/local-deploy.sh`: builds images in Minikube, deploys the Minikube overlay, and optionally runs smoke tests
 - `scripts/local-verify.sh`: verifies the frontend and reporting API in Minikube
 - `scripts/local-cleanup.sh`: removes local Kubernetes resources
+- `scripts/doks-bootstrap.sh`: creates the DOKS cluster and registry and can sync GitHub CD secrets and variables
 - `scripts/doks-deploy.sh`: builds, pushes, and deploys to DOKS
 - `scripts/doks-verify.sh`: verifies the DOKS deployment
 
@@ -152,6 +153,27 @@ This is important because it reduces drift between local workflows and GitHub au
 - `DOKS_CLUSTER_NAME`
 - `DOKR_REGISTRY_NAME`
 - `K8S_NAMESPACE` (optional)
+
+## DOKS Bootstrap
+
+To turn the GitHub CD workflow into a runnable deployment path, the project includes a DOKS bootstrap script:
+
+```bash
+./scripts/doks-bootstrap.sh
+```
+
+This initializes the cloud-side prerequisites for CD:
+
+- DOKS cluster
+- DigitalOcean Container Registry
+- canonical `deploy.env`
+- local DOKS config and secret env files
+
+It can also sync the GitHub Actions repository variables and secrets automatically when run with:
+
+```bash
+SYNC_GITHUB_CD=1 GITHUB_REPOSITORY=<owner>/<repo> DIGITALOCEAN_ACCESS_TOKEN=<token> ./scripts/doks-bootstrap.sh
+```
 
 ## What CI Validates
 

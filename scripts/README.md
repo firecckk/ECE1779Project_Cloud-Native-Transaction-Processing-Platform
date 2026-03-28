@@ -35,6 +35,9 @@ System-managed database fields such as `status`, `risk_score`, `created_at`, and
 - `doks-deploy.sh`
 	Builds and pushes the backend image to DigitalOcean Container Registry, applies the DOKS overlay, and prints the public service endpoint.
 
+- `doks-bootstrap.sh`
+	Creates the DOKS cluster and DigitalOcean Container Registry if needed, writes the canonical DOKS deploy env file, and can optionally sync GitHub Actions secrets and variables.
+
 - `doks-delete.sh`
 	Deletes the configured DOKS cluster. By default it also removes associated load balancers, volumes, and volume snapshots.
 
@@ -47,8 +50,10 @@ System-managed database fields such as `status`, `risk_score`, `created_at`, and
 Examples:
 
 ```bash
+./scripts/doks-bootstrap.sh
+SYNC_GITHUB_CD=1 GITHUB_REPOSITORY=owner/repo DIGITALOCEAN_ACCESS_TOKEN=... ./scripts/doks-bootstrap.sh
 ./scripts/doks-delete.sh
-DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh k8s-ece1779-transcation-platform
+DELETE_ASSOCIATED_RESOURCES=0 ./scripts/doks-delete.sh transaction-platform
 ./scripts/doks-scale-nodes.sh 2
 ./scripts/doks-scale-nodes.sh 3 pool-2h5y79uc1
 ```

@@ -17,7 +17,7 @@ Usage:
 
 Examples:
   ./scripts/doks-delete.sh
-  ./scripts/doks-delete.sh k8s-ece1779-transcation-platform
+  ./scripts/doks-delete.sh transaction-platform
 
 Environment:
   DOKS_ENV_FILE                Optional path to a deploy.env file.
