@@ -14,6 +14,7 @@ NAMESPACE="${NAMESPACE:-transaction-platform}"
 DOKS_CLUSTER_NAME="${DOKS_CLUSTER_NAME:-}"
 DOKR_REGISTRY_NAME="${DOKR_REGISTRY_NAME:-}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
+DOCR_REPOSITORY_NAME="${DOCR_REPOSITORY_NAME:-transaction-platform}"
 
 cleanup() {
   rm -rf "$TEMP_WORKDIR"
@@ -56,6 +57,7 @@ load_env_file() {
   DOKS_CLUSTER_NAME="${DOKS_CLUSTER_NAME:-}"
   DOKR_REGISTRY_NAME="${DOKR_REGISTRY_NAME:-}"
   IMAGE_TAG="${IMAGE_TAG:-latest}"
+  DOCR_REPOSITORY_NAME="${DOCR_REPOSITORY_NAME:-transaction-platform}"
 }
 
 wait_for_load_balancer() {
@@ -115,8 +117,10 @@ fi
 echo "[doks-deploy] logging into DigitalOcean Container Registry"
 doctl registry login --expiry-seconds 1200
 
-BACKEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG"
-FRONTEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG"
+BACKEND_IMAGE_TAG="backend-$IMAGE_TAG"
+FRONTEND_IMAGE_TAG="frontend-$IMAGE_TAG"
+BACKEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME:$BACKEND_IMAGE_TAG"
+FRONTEND_IMAGE="registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME:$FRONTEND_IMAGE_TAG"
 
 echo "[doks-deploy] building backend image '$BACKEND_IMAGE'"
 docker build -t "$BACKEND_IMAGE" -f "$REPO_ROOT/backend/Dockerfile" "$REPO_ROOT"
@@ -136,7 +140,10 @@ cp -R "$REPO_ROOT/k8s/base" "$TEMP_K8S_ROOT/base"
 cp -R "$OVERLAY_DIR" "$TEMP_OVERLAY_DIR"
 sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-reporting-service|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 sed -i "s|registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-frontend|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
-sed -i "s|newTag: latest|newTag: $IMAGE_TAG|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
+sed -i "s|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service|registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
+sed -i "s|registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend|registry.digitalocean.com/$DOKR_REGISTRY_NAME/$DOCR_REPOSITORY_NAME|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
+sed -i "0,/newTag: latest/s|newTag: latest|newTag: $BACKEND_IMAGE_TAG|" "$TEMP_OVERLAY_DIR/kustomization.yaml"
+sed -i "0,/newTag: latest/! {0,/newTag: latest/s|newTag: latest|newTag: $FRONTEND_IMAGE_TAG|}" "$TEMP_OVERLAY_DIR/kustomization.yaml"
 
 echo "[doks-deploy] applying kubernetes overlay"
 kubectl apply -k "$TEMP_OVERLAY_DIR"

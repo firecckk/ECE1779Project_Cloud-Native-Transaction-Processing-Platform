@@ -150,6 +150,7 @@ The script will:
 - fetch cluster credentials using `doctl`
 - log Docker into DigitalOcean Container Registry
 - build and push the backend and frontend images
+- publish both images into a single DOCR repository using different tags so the workflow works with registries limited to one repository
 - render the DOKS overlay with your registry name and image tag
 - apply Kubernetes resources
 - wait for rollouts
@@ -208,10 +209,10 @@ doctl registry login
 ### 3. Build and push the application images
 
 ```bash
-docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG -f backend/Dockerfile .
-docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-reporting-service:$IMAGE_TAG
-docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG -f frontend/Dockerfile frontend
-docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-frontend:$IMAGE_TAG
+docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-platform:backend-$IMAGE_TAG -f backend/Dockerfile .
+docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-platform:backend-$IMAGE_TAG
+docker build -t registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-platform:frontend-$IMAGE_TAG -f frontend/Dockerfile frontend
+docker push registry.digitalocean.com/$DOKR_REGISTRY_NAME/transaction-platform:frontend-$IMAGE_TAG
 ```
 
 ### 4. Update the DOKS overlay image reference
