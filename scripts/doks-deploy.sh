@@ -40,8 +40,31 @@ require_env() {
   fi
 }
 
+ensure_namespace() {
+  echo "[doks-deploy] ensuring namespace '$NAMESPACE' exists"
+  kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+}
+
+wait_for_default_service_account() {
+  local attempt=1
+
+  while (( attempt <= 30 )); do
+    if kubectl get serviceaccount default -n "$NAMESPACE" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    sleep 2
+    ((attempt++))
+  done
+
+  echo "Timed out waiting for default service account in namespace '$NAMESPACE'" >&2
+  return 1
+}
+
 ensure_registry_pull_secret() {
   local secret_name="registry-$DOKR_REGISTRY_NAME"
+
+  wait_for_default_service_account
 
   echo "[doks-deploy] syncing registry pull secret '$secret_name' into namespace '$NAMESPACE'"
   doctl registry kubernetes-manifest "$DOKR_REGISTRY_NAME" \
@@ -126,6 +149,8 @@ if ! doctl kubernetes cluster kubeconfig save "$DOKS_CLUSTER_NAME"; then
   echo "[doks-deploy] create it with ./scripts/doks-bootstrap.sh or update DOKS_CLUSTER_NAME to an existing cluster" >&2
   exit 1
 fi
+
+ensure_namespace
 
 echo "[doks-deploy] logging into DigitalOcean Container Registry"
 doctl registry login --expiry-seconds 1200
