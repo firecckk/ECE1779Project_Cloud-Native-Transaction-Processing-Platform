@@ -155,9 +155,8 @@ Users open the frontend in a browser and view charts or summaries for transactio
 
 ### Screenshots
 
-![Dashboard Screenshot](./docs/images/dashboard.png)
-![Reports Screenshot](./docs/images/reports.png)
-![Docker Compose Running](./docs/images/docker-compose.png)
+![Transaction Console 1](./img/transaction%20console%201.jpg)
+![Transaction Console 2](./img/transaction%20console%202.jpg)
 
 ## Development Guide
 
