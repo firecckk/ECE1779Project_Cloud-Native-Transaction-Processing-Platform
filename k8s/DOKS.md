@@ -176,6 +176,40 @@ The verification helper will:
 - call `/api/reports/merchant-ranking?limit=5`
 - fail if either response is not valid for the deployed service
 
+To expose ingestion publicly as a separate endpoint on DOKS, add a `LoadBalancer` patch for the `transaction-ingestion` Service in the DOKS overlay. After redeploying, retrieve the endpoint with:
+
+```bash
+kubectl get svc transaction-ingestion -n transaction-platform
+```
+
+Once an external IP or hostname is assigned, ingest transactions directly with:
+
+```bash
+node scripts/transaction-generator.js --mode http --count 100 --rate 20 --url http://<ingestion-load-balancer>:8081/transactions
+```
+
+Or validate the ingestion endpoint with a single request:
+
+```bash
+curl -X POST http://<ingestion-load-balancer>:8081/transactions \
+  -H "content-type: application/json" \
+  -d '{
+    "transaction_id":"11111111-1111-4111-8111-111111111111",
+    "idempotency_key":"test-key-1",
+    "event_timestamp":"2026-03-31T23:59:59Z",
+    "sender_account":"acct_1001",
+    "receiver_account":"acct_2002",
+    "merchant_id":"merchant_01",
+    "amount":123.45,
+    "currency":"USD",
+    "transaction_type":"PAYMENT",
+    "channel":"API",
+    "metadata":{}
+  }'
+```
+
+This endpoint is unauthenticated by default, so treat it as a temporary demo or test ingress unless you also add access controls.
+
 The node scaling helper will:
 
 - load `DOKS_CLUSTER_NAME` and optional `DOKS_NODE_POOL_NAME` from `deploy.env`

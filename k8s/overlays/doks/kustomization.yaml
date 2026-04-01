@@ -36,6 +36,11 @@ patches:
       version: v1
       kind: Service
       name: transaction-frontend
+  - path: ingestion-service-patch.yaml
+    target:
+      version: v1
+      kind: Service
+      name: transaction-ingestion
   - path: postgres-pvc-patch.yaml
   - path: reporting-deployment-patch.yaml
     target:
