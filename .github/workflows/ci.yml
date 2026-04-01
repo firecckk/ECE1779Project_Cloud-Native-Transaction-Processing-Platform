@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - .github/workflows/**
+      - backend/**
+      - frontend/**
+      - shared/**
+      - k8s/**
+      - scripts/**
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - backend/**
+      - frontend/**
+      - shared/**
+      - k8s/**
+      - scripts/**
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-k8s-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Verify backend modules load
+        env:
+          NODE_PATH: backend/node_modules
+        run: |
+          node - <<'EOF'
+          const createApp = require('./backend/src/createApp');
+
+          createApp('all');
+          createApp('ingestion');
+          createApp('reporting');
+          createApp('validation');
+
+          console.log('backend modules loaded successfully');
+          EOF
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@v0.0.21
+        with:
+          driver: docker
+          container-runtime: containerd
+          cpus: 2
+          memory: 4000m
+
+      - name: Configure kubectl for Minikube
+        run: |
+          set -euo pipefail
+          minikube profile list
+          minikube update-context -p minikube
+          kubectl config use-context minikube
+          kubectl config current-context
+          kubectl cluster-info
+
+      - name: Validate Kubernetes manifests
+        run: |
+          set -euo pipefail
+          kubectl kustomize k8s/overlays/minikube >/dev/null
+          cp k8s/overlays/doks/config.env.example k8s/overlays/doks/config.env
+          cp k8s/overlays/doks/secrets.env.example k8s/overlays/doks/secrets.env
+          kubectl kustomize k8s/overlays/doks >/dev/null
+
+      - name: Confirm Minikube cluster is reachable
+        run: |
+          set -euo pipefail
+          minikube status
+          kubectl get nodes
+
+      - name: Start Minikube-based integration environment
+        env:
+          MINIKUBE_PROFILE: minikube
+          MINIKUBE_DRIVER: docker
+          SKIP_MINIKUBE_START: '1'
+          SKIP_LOCAL_VERIFY: '1'
+        run: ./scripts/local-deploy.sh
+
+      - name: Verify Kubernetes deployment
+        env:
+          MINIKUBE_PROFILE: minikube
+        run: ./scripts/local-verify.sh
+
+      - name: Collect Kubernetes diagnostics on failure
+        if: failure()
+        run: |
+          set -euo pipefail
+          minikube profile list || true
+          kubectl config current-context || true
+          kubectl cluster-info || true
+          kubectl get all -n transaction-platform || true
+          kubectl get pvc -n transaction-platform || true
+          kubectl logs deployment/transaction-postgres -n transaction-platform || true
+          kubectl logs deployment/transaction-ingestion -n transaction-platform || true
+          kubectl logs deployment/transaction-validation -n transaction-platform || true
+          kubectl logs deployment/transaction-reporting -n transaction-platform || true
+          kubectl logs deployment/transaction-frontend -n transaction-platform || true
+
+      - name: Stop Minikube environment
+        if: always()
+        env:
+          MINIKUBE_PROFILE: minikube
+          STOP_MINIKUBE: '1'
+        run: ./scripts/local-cleanup.sh

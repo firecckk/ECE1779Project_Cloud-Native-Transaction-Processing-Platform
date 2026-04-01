@@ -26,12 +26,39 @@ images:
   - name: transaction-reporting-service
     newName: registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-reporting-service
     newTag: latest
+  - name: transaction-frontend
+    newName: registry.digitalocean.com/REPLACE_WITH_DOKR_REGISTRY/transaction-frontend
+    newTag: latest
 
 patches:
-  - path: backend-service-patch.yaml
+  - path: frontend-service-patch.yaml
     target:
       version: v1
       kind: Service
-      name: transaction-backend
+      name: transaction-frontend
+  - path: ingestion-service-patch.yaml
+    target:
+      version: v1
+      kind: Service
+      name: transaction-ingestion
   - path: postgres-pvc-patch.yaml
-  - path: backend-deployment-patch.yaml
+  - path: reporting-deployment-patch.yaml
+    target:
+      version: apps/v1
+      kind: Deployment
+      name: transaction-reporting
+  - path: frontend-deployment-patch.yaml
+    target:
+      version: apps/v1
+      kind: Deployment
+      name: transaction-frontend
+  - path: ingestion-deployment-patch.yaml
+    target:
+      version: apps/v1
+      kind: Deployment
+      name: transaction-ingestion
+  - path: validation-deployment-patch.yaml
+    target:
+      version: apps/v1
+      kind: Deployment
+      name: transaction-validation

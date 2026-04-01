@@ -6,8 +6,14 @@ resources:
   - postgres-pvc.yaml
   - postgres-deployment.yaml
   - postgres-service.yaml
-  - backend-deployment.yaml
-  - backend-service.yaml
+  - ingestion-deployment.yaml
+  - ingestion-service.yaml
+  - validation-deployment.yaml
+  - validation-service.yaml
+  - reporting-deployment.yaml
+  - reporting-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
   - network-policy.yaml
 
 configMapGenerator:
@@ -19,6 +25,8 @@ configMapGenerator:
       - POSTGRES_HOST=transaction-postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=transaction_user
+      - VALIDATION_BATCH_SIZE=100
+      - VALIDATION_POLL_INTERVAL_MS=5000
   - name: transaction-db-schema
     files:
       - schema.sql=schema.sql

@@ -11,8 +11,13 @@ spec:
   ingress:
     - from:
         - podSelector:
-            matchLabels:
-              app: transaction-backend
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - transaction-ingestion
+                  - transaction-validation
+                  - transaction-reporting
       ports:
         - protocol: TCP
           port: 5432

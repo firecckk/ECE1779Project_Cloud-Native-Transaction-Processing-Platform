@@ -1,0 +1,116 @@
+name: Deploy to DOKS
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Optional image tag to deploy. Defaults to the triggering commit SHA.
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-doks
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+    env:
+      DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      DOKS_CONFIG_ENV_CONTENT: ${{ secrets.DOKS_CONFIG_ENV }}
+      DOKS_SECRETS_ENV_CONTENT: ${{ secrets.DOKS_SECRETS_ENV }}
+      DOKS_CLUSTER_NAME: ${{ vars.DOKS_CLUSTER_NAME }}
+      DOKR_REGISTRY_NAME: ${{ vars.DOKR_REGISTRY_NAME }}
+      K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+
+    steps:
+      - name: Checkout triggering commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set deployment image tag
+        id: image-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "value=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "value=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate deployment configuration
+        run: |
+          set -euo pipefail
+
+          missing=0
+
+          check_required() {
+            local name="$1"
+            local value="$2"
+
+            if [ -z "$value" ]; then
+              echo "::error title=Missing GitHub configuration::$name is not configured for deploy-doks.yml"
+              missing=1
+            fi
+          }
+
+          check_required "DIGITALOCEAN_ACCESS_TOKEN secret" "$DIGITALOCEAN_ACCESS_TOKEN"
+          check_required "DOKS_CONFIG_ENV secret" "$DOKS_CONFIG_ENV_CONTENT"
+          check_required "DOKS_SECRETS_ENV secret" "$DOKS_SECRETS_ENV_CONTENT"
+          check_required "DOKS_CLUSTER_NAME variable" "$DOKS_CLUSTER_NAME"
+          check_required "DOKR_REGISTRY_NAME variable" "$DOKR_REGISTRY_NAME"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "::warning title=Deployment skipped until configuration is added::Configure the required GitHub secrets and variables, then rerun the workflow."
+            exit 1
+          fi
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ env.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - name: Materialize DOKS environment files
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$DOKS_CONFIG_ENV_CONTENT" > k8s/overlays/doks/config.env
+          printf '%s\n' "$DOKS_SECRETS_ENV_CONTENT" > k8s/overlays/doks/secrets.env
+
+      - name: Ensure DOKS infrastructure exists
+        env:
+          DOKS_CLUSTER_NAME: ${{ env.DOKS_CLUSTER_NAME }}
+          DOKR_REGISTRY_NAME: ${{ env.DOKR_REGISTRY_NAME }}
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
+        run: ./scripts/doks-bootstrap.sh
+
+      - name: Deploy to DigitalOcean Kubernetes
+        env:
+          DOKS_CLUSTER_NAME: ${{ env.DOKS_CLUSTER_NAME }}
+          DOKR_REGISTRY_NAME: ${{ env.DOKR_REGISTRY_NAME }}
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.value }}
+        run: ./scripts/doks-deploy.sh
+
+      - name: Verify deployment
+        env:
+          NAMESPACE: ${{ env.K8S_NAMESPACE != '' && env.K8S_NAMESPACE || 'transaction-platform' }}
+        run: ./scripts/doks-verify.sh

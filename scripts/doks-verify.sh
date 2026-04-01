@@ -19,14 +19,14 @@ require_command() {
 discover_service_url() {
   local endpoint=""
 
-  endpoint="$(kubectl get svc transaction-backend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+  endpoint="$(kubectl get svc transaction-frontend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
 
   if [[ -z "$endpoint" ]]; then
-    endpoint="$(kubectl get svc transaction-backend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+    endpoint="$(kubectl get svc transaction-frontend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
   fi
 
   if [[ -z "$endpoint" ]]; then
-    echo "Could not determine transaction-backend LoadBalancer endpoint in namespace '$NAMESPACE'" >&2
+    echo "Could not determine transaction-frontend LoadBalancer endpoint in namespace '$NAMESPACE'" >&2
     return 1
   fi
 
@@ -57,14 +57,14 @@ require_command kubectl
 require_command curl
 
 if [[ -z "$BASE_URL" ]]; then
-  echo "[doks-verify] discovering backend LoadBalancer endpoint"
+  echo "[doks-verify] discovering frontend LoadBalancer endpoint"
   BASE_URL="$(discover_service_url)"
 fi
 
-echo "[doks-verify] backend url: $BASE_URL"
+echo "[doks-verify] frontend url: $BASE_URL"
 
 HEALTH_RESPONSE="$(fetch_with_retries "$BASE_URL/health")"
-REPORT_RESPONSE="$(fetch_with_retries "$BASE_URL/reports/merchant-ranking?limit=5")"
+REPORT_RESPONSE="$(fetch_with_retries "$BASE_URL/api/reports/merchant-ranking?limit=5")"
 
 if [[ "$HEALTH_RESPONSE" != *'"status":"ok"'* ]]; then
   echo "[doks-verify] unexpected health response: $HEALTH_RESPONSE" >&2

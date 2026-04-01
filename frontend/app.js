@@ -1,6 +1,4 @@
-const API_BASE = window.location.hostname === "localhost"
-  ? "http://localhost:8080"
-  : "http://backend:8080";
+const API_BASE = "/api";
 
 const statusEl = document.getElementById("status");
 const fromInput = document.getElementById("fromDate");
@@ -161,7 +159,7 @@ function switchPage(target) {
 }
 
 async function fetchReport(path, params = {}) {
-  const url = new URL(`${API_BASE}${path}`);
+  const url = new URL(`${API_BASE}${path}`, window.location.origin);
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") {
       url.searchParams.set(k, v);
