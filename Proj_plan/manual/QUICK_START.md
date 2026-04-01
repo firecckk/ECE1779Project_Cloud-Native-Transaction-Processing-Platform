@@ -202,12 +202,12 @@ curl http://localhost:8080/health
 ```bash
 # 插入一笔交易（PowerShell）
 $body = @{
-    transaction_id = "11111111-0000-1000-a000-000000000004"
-    idempotency_key = "test-key-004"
+    transaction_id = "11111111-0000-1000-a000-000000000005"
+    idempotency_key = "test-key-005"
     event_timestamp = Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ"
-    sender_account = "acc-bob"
-    receiver_account = "acc-jerry"
-    merchant_id = "merchant-002"
+    sender_account = "acc-bob2"
+    receiver_account = "acc-jerry2"
+    merchant_id = "merchant-004"
     amount = 99999
     currency = "USD"
     transaction_type = "PAYMENT"
@@ -262,16 +262,47 @@ curl -X POST http://localhost:8080/transactions \
 ```
 
 ### 步骤 4️⃣：运行验证规则
-```bash
-# 说明：当前后端在交易写入 RECEIVED 后会自动触发验证。
-# 以下命令主要用于手动补跑/批量补偿。
 
-# 触发验证处理
-curl -X POST http://localhost:8080/validation/run-once -H "Content-Type: application/json" -d '{"limit": 20}'
+Validation 支持两种触发方式：
 
-# 预期响应：交易状态更新为 VALID 或 REJECTED
-{"claimed_count": 1, "processed_count": 1, "valid_count": 1, "rejected_count": 0, ...}
+#### **方式 1️⃣：自动触发（推荐）**
+每当有新交易通过 `POST /transactions` 写入数据库时，后端会**自动在后台异步触发** Validation Worker，无需手动调用。
+
+流程：
 ```
+交易数据 → POST /transactions → ✅ 立即返回 201
+                              ↓
+                     自动触发 Validation 后台处理
+                              ↓
+                  交易状态自动更新：RECEIVED → VALID/REJECTED
+```
+
+#### **方式 2️⃣：手动触发**
+如果需要手动补跑或清理，调用以下端点：
+
+```bash
+curl -X POST http://localhost:8080/validation/run-once \
+  -H "Content-Type: application/json" \
+  -d '{"limit": 20}'
+```
+
+**参数说明：**
+- `limit`: 单次最多处理多少笔交易（默认 100，可选）
+
+**预期响应：**
+```json
+{
+  "claimed_count": 20,
+  "processed_count": 20,
+  "valid_count": 18,
+  "rejected_count": 2
+}
+```
+
+**使用场景：**
+- 系统异常导致某些交易未被验证
+- 需要批量补偿验证
+- 测试验证规则逻辑
 
 ### 步骤 5️⃣：查询报告
 ```bash
