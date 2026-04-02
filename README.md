@@ -398,11 +398,8 @@ Change http://localhost:8080/transactions to http://ingestionUrl:8081/transactio
 
 Our project supports both local deployment through Docker Compose and orchestrated deployment through Kubernetes manifests. Kubernetes resources are provided for backend services, PostgreSQL, networking, configuration, and horizontal pod auto-scaling.
 
-## Video Demo
 
-Add your final video URL here. The video must be accessible to the instructor and TAs.
-
-- **Video URL:** `ADD_VIDEO_URL_HERE`
+- **Video URL:** https://utoronto-my.sharepoint.com/:v:/g/personal/kun_cheng_mail_utoronto_ca/IQDEzOs1KNCyQba94diBIGVLAbFnM-c7qFmMeLtaoEvlTmM?e=X21pOC
 
 ## AI Assistance & Verification (Summary)
 
