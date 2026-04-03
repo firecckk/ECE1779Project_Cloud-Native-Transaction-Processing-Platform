@@ -413,7 +413,7 @@ Correctness was verified through technical means rather than relying on AI outpu
 ## Individual Contributions
 
 - **Xiangyu Liu:** Contributed to the overall system architecture design and implemented the transaction ingestion workflow, including request validation, database insertion, and the transaction generator for simulating input data.
-- **Jingwei Liu:** Implemented validation and risk scoring rules, transaction state transitions, and audit updates.
+- **Jingwei Liu:** Implemented validation service. It checks each transaction for basic correctness and then applies several risk rules, including high amount, duplicate transactions, and abnormal frequency. These signals are combined into a risk score from 0 to 100, and transactions with a score above 70 are rejected. Finally, the system updates the transaction status and records the result.
 - **Yilin Wang:** Contributed to the database architecture design and implemented the analytical reporting workflow, including SQL aggregation queries, core analytics APIs, and the frontend dashboard for data visualization.
 - **Kun Cheng:** Implemented the Minikube and DOKS deployment scripts and built the GitHub CI/CD pipeline for automated application deployment.
 - **Shared Work:** Docker Compose setup, Kubernetes manifests, debugging, testing, documentation, and final integration.
@@ -426,11 +426,3 @@ We also learned the difference between stateless application services and statef
 
 Overall, the project helped us connect course concepts such as containerization, orchestration, persistence, and scalability with a realistic engineering workflow. If given more time, we would further enhance validation rules, improve automated testing, and strengthen observability and production-style deployment practices.
 
-## Additional Deployment Artifacts
-
-Add screenshots or links here for the following if they are part of the final submission:
-
-- DigitalOcean Kubernetes clustering
-- Deployment visualization script
-- Deployment verification script
-- DigitalOcean monitoring
